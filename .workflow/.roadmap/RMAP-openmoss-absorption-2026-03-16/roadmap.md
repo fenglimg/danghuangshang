@@ -3,8 +3,26 @@
 **Session**: RMAP-openmoss-absorption-2026-03-16
 **Requirement**: 为当前基于 `danghuangshang` 的本地 OpenClaw 分支制定 OpenMOSS 吸收路线图，按 `task core -> review/patrol -> GUI control plane` 三阶段拆开
 **Strategy**: progressive
-**Status**: Ready
+**Status**: In Progress
 **Created**: 2026-03-16T00:00:00+08:00
+
+---
+
+## Execution Progress
+
+- **2026-03-16 / Wave 1 completed**
+  - `ISS-OPENMOSS-001` 已完成
+  - 已产出正式 ADR：
+    - `/root/danghuangshang-openmoss-exec/docs/openmoss/adr-001-absorption-boundary.md`
+  - 已冻结：
+    - OpenMOSS 吸收边界
+    - 组织语义层 vs 系统职责层分离规则
+    - 三省六部到治理职责层的映射
+    - 一期 `filesystem-first` 存储策略
+    - Wave 1-3 不改 `install.sh` 的准入规则
+- **Next**
+  - 进入 `ISS-OPENMOSS-002`
+  - 在 ADR 边界内建立 task core 最小模型与状态机
 
 ---
 

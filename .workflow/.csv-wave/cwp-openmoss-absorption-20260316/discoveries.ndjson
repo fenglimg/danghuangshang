@@ -1,1 +1,1 @@
-
+{"date":"2026-03-16","wave":1,"task_id":"1","type":"adr","summary":"Accepted ADR-001. OpenMOSS will be absorbed as a governance overlay, not as a replacement for the three-provinces/six-ministries semantic layer. Phase 1 storage is filesystem-first under ~/.openclaw/state/openmoss/, and install.sh remains out of scope through Wave 3.","artifacts":["/root/danghuangshang-openmoss-exec/docs/openmoss/adr-001-absorption-boundary.md"]}
