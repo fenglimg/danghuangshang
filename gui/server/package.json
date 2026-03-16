@@ -2,7 +2,7 @@
   "name": "boluo-gui-server",
   "type": "module",
   "scripts": {
-    "test:openmoss": "node --test ../../tests/openmoss/task-core/task-core.test.js ../../tests/openmoss/activity-log/activity-log.test.js"
+    "test:openmoss": "node --test ../../tests/openmoss/task-core/task-core.test.js ../../tests/openmoss/activity-log/activity-log.test.js ../../tests/openmoss/review/review.test.js ../../tests/openmoss/patrol/patrol.test.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

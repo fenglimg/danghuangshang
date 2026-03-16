@@ -14,6 +14,8 @@ import { WebSocketServer } from 'ws';
 import { exec as _exec } from 'child_process';
 import { promisify } from 'util';
 import { OpenMossTaskService } from './openmoss/activity-log/index.js';
+import { ReviewWorkflowService } from './openmoss/review/index.js';
+import { PatrolService } from './openmoss/patrol/index.js';
 const execAsync = promisify(_exec);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -69,6 +71,8 @@ const CONFIG_PATH = existsSync(join(OPENCLAW_DIR, 'openclaw.json'))
   ? join(OPENCLAW_DIR, 'openclaw.json')
   : join(OPENCLAW_DIR, 'openclaw.json');
 const openMossTaskService = new OpenMossTaskService();
+const openMossReviewService = new ReviewWorkflowService();
+const openMossPatrolService = new PatrolService();
 
 app.use(cors());
 app.use(express.json());
@@ -2377,7 +2381,7 @@ app.post('/api/openmoss/tasks/:taskId/review', authMiddleware, (req, res) => {
       return res.status(400).json({ error: 'Invalid task ID' });
     }
 
-    const result = openMossTaskService.reviewTask(taskId, req.body || {});
+    const result = openMossReviewService.reviewTask(taskId, req.body || {});
     res.json(result);
   } catch (err) {
     const statusCode = err.message.includes('not found') ? 404 : 400;
@@ -2397,6 +2401,80 @@ app.post('/api/openmoss/tasks/:taskId/block', authMiddleware, (req, res) => {
   } catch (err) {
     const statusCode = err.message.includes('not found') ? 404 : 400;
     res.status(statusCode).json({ error: err.message });
+  }
+});
+
+app.get('/api/openmoss/reviews', authMiddleware, (req, res) => {
+  try {
+    const reviews = openMossReviewService.listReviews({
+      taskId: typeof req.query.taskId === 'string' ? req.query.taskId : undefined,
+      action: typeof req.query.action === 'string' ? req.query.action : undefined,
+      limit: req.query.limit,
+    });
+    res.json({ reviews, total: reviews.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message, reviews: [] });
+  }
+});
+
+app.get('/api/openmoss/reviews/queue', authMiddleware, (req, res) => {
+  try {
+    const tasks = openMossReviewService.listPendingReviews({
+      limit: req.query.limit,
+    });
+    res.json({ tasks, total: tasks.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message, tasks: [] });
+  }
+});
+
+app.get('/api/openmoss/tasks/:taskId/reviews', authMiddleware, (req, res) => {
+  try {
+    const taskId = sanitizeTaskId(req.params.taskId);
+    if (!taskId) {
+      return res.status(400).json({ error: 'Invalid task ID', reviews: [] });
+    }
+
+    const reviews = openMossReviewService.getTaskReviews(taskId);
+    res.json({ taskId, reviews, total: reviews.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message, reviews: [] });
+  }
+});
+
+app.post('/api/openmoss/patrol/scan', authMiddleware, (req, res) => {
+  try {
+    const result = openMossPatrolService.scanTasks(req.body || {});
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/openmoss/patrol/alerts', authMiddleware, (req, res) => {
+  try {
+    const alerts = openMossPatrolService.listAlerts({
+      taskId: typeof req.query.taskId === 'string' ? req.query.taskId : undefined,
+      status: typeof req.query.status === 'string' ? req.query.status : undefined,
+      limit: req.query.limit,
+    });
+    res.json({ alerts, total: alerts.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message, alerts: [] });
+  }
+});
+
+app.get('/api/openmoss/tasks/:taskId/patrol-alerts', authMiddleware, (req, res) => {
+  try {
+    const taskId = sanitizeTaskId(req.params.taskId);
+    if (!taskId) {
+      return res.status(400).json({ error: 'Invalid task ID', alerts: [] });
+    }
+
+    const alerts = openMossPatrolService.getTaskAlerts(taskId);
+    res.json({ taskId, alerts, total: alerts.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message, alerts: [] });
   }
 });
 
