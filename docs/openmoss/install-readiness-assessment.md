@@ -1,0 +1,279 @@
+# OpenMOSS 安装器评审准入评估
+
+> Status: Assessment  
+> Scope: 判断当前 6-wave active scope 是否已具备进入 `install.sh` / migration / doctor 评审的前提
+
+← [返回文档索引](../README.md) | [返回 OpenMOSS SOP](../openmoss-integration-sop.md)
+
+---
+
+## 结论先行
+
+当前结论不是“已经可以改 `install.sh`”，而是：
+
+> **已经具备进入“安装器评审”阶段的前置讨论条件，但还不具备直接进入“安装器实现”阶段的条件。**
+
+换句话说：
+
+- **可以评审**
+- **还不应直接落安装器改动**
+
+---
+
+## 评估口径
+
+按 SOP 中的安装器准入逻辑，分成三类：
+
+1. **已具备**
+2. **部分具备，可进入评审**
+3. **未具备，不能直接改安装器**
+
+---
+
+## A. 已具备进入安装器评审的前提
+
+### A1. 核心能力已经形成真实闭环
+
+判定：**已具备**
+
+证据：
+
+- task core 已完成：
+  - [task-core index.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/task-core/index.js)
+- activity log 已完成：
+  - [activity-log service.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/activity-log/service.js)
+- review 已完成：
+  - [review service.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/review/service.js)
+- patrol 已完成：
+  - [patrol service.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/patrol/service.js)
+- governance GUI 已完成：
+  - [Governance.tsx](/root/danghuangshang-openmoss-exec/gui/src/pages/Governance.tsx)
+
+判断理由：
+
+- 现在已经不是“抽象设计”
+- 而是有真实模型、真实状态流、真实事件流、真实 GUI 控制面
+
+### A2. 一期存储路径已经冻结
+
+判定：**已具备**
+
+证据：
+
+- [ADR-001](/root/danghuangshang-openmoss-exec/docs/openmoss/adr-001-absorption-boundary.md)
+- [task-core storage.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/task-core/storage.js#L33)
+
+当前已冻结为：
+
+```text
+~/.openclaw/state/openmoss/
+```
+
+判断理由：
+
+- 路径已经明确
+- 目录职责已经明确
+- 没有把治理状态混进 `~/clawd`
+
+### A3. 当前 active scope 已全部完成
+
+判定：**已具备**
+
+证据：
+
+- [tasks.csv](/root/danghuangshang-openmoss-exec/.workflow/.csv-wave/cwp-openmoss-absorption-20260316/tasks.csv)
+- [roadmap.md](/root/danghuangshang-openmoss-exec/.workflow/.roadmap/RMAP-openmoss-absorption-2026-03-16/roadmap.md)
+- [issues.jsonl](/root/danghuangshang-openmoss-exec/.workflow/issues/issues.jsonl)
+
+判断理由：
+
+- 1 到 7 号 active task 已全部完成
+- 现在可以从“实现阶段”进入“收官评审阶段”
+
+---
+
+## B. 部分具备，可进入评审但不能直接实现
+
+### B1. 数据 schema 已存在，但 migration 机制还未建立
+
+判定：**部分具备**
+
+证据：
+
+- 已有 schema version：
+  - [task-core storage.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/task-core/storage.js#L48)
+- 但没有 migration runner
+- 没有版本升级脚本
+- 没有 schema upgrade 文档
+
+判断理由：
+
+- 这说明“可以讨论如何迁移”
+- 但还不能把 schema 升级责任直接交给 `install.sh`
+
+### B2. GUI / API 闭环已完成，但 live upgrade 过程未验证
+
+判定：**部分具备**
+
+证据：
+
+- API 与 GUI 都已经完成
+- 但当前验证发生在独立 worktree 与 detached HEAD 上
+- 尚未完成：
+  - `local-host-install` 集成验证
+  - 老环境增量升级验证
+  - 现有用户目录上的非破坏性验证
+
+判断理由：
+
+- 这足以进入评审
+- 但不足以直接改安装器
+
+### B3. 新目录按需惰性创建可行，但 installer policy 还未定义
+
+判定：**部分具备**
+
+证据：
+
+- 代码已能自行 `mkdir -p` 初始化：
+  - [task-core storage.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/task-core/storage.js#L15)
+  - [activity-log storage.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/activity-log/storage.js)
+  - [review storage.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/review/storage.js)
+  - [patrol storage.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/patrol/storage.js)
+
+判断理由：
+
+- 这意味着严格来说不一定非要 `install.sh` 预创建目录
+- 但是否预创建、是否做权限检查、是否做备份提示，还没形成交付策略
+
+---
+
+## C. 当前不具备，不能直接进入安装器实现
+
+### C1. `doctor.sh` 还不理解 OpenMOSS 治理状态
+
+判定：**未具备**
+
+证据：
+
+- 当前 `doctor.sh` 只检查 OpenClaw/配置/Discord 等传统项：
+  - [doctor.sh](/root/danghuangshang-openmoss-exec/doctor.sh)
+- 未发现：
+  - `~/.openclaw/state/openmoss/` 检查
+  - schema version 检查
+  - task/review/patrol 数据一致性检查
+
+结论：
+
+- 在 `doctor` 未扩展前，不应把 OpenMOSS 目录初始化或修复责任直接下放给安装器
+
+### C2. 迁移文档还没有 OpenMOSS 状态目录章节
+
+判定：**未具备**
+
+证据：
+
+- [host-install-migration.md](/root/danghuangshang-openmoss-exec/docs/host-install-migration.md)
+- [install-prompt.md](/root/danghuangshang-openmoss-exec/docs/install-prompt.md)
+
+当前问题：
+
+- 文档里没有 `state/openmoss` 目录的备份 / 升级 / 保留规则
+- 没有说明老环境升级时新目录如何出现
+- 没有说明“已有 `.openclaw` 但没有 OpenMOSS state”时如何非破坏接入
+
+### C3. `install.sh` 还没有任何 OpenMOSS 交付面约定
+
+判定：**未具备**
+
+证据：
+
+- [install.sh](/root/danghuangshang-openmoss-exec/install.sh)
+
+当前问题：
+
+- 没有 OpenMOSS state 目录初始化
+- 没有兼容性提示
+- 没有迁移补丁
+- 没有与治理层相关的 doctor / bootstrap / schema check
+
+结论：
+
+- 现在直接改 `install.sh`，仍然是“先装上再试”的风险模式
+
+### C4. 还没有针对老环境的增量升级演练
+
+判定：**未具备**
+
+当前缺口：
+
+- 没有拿现有 `~/.openclaw` live 环境做一次升级演练
+- 没有验证：
+  - 旧配置不变
+  - 新治理目录惰性出现
+  - GUI 升级后可读旧系统又可写新治理数据
+
+这项是进入安装器实现前的硬前提。
+
+---
+
+## 当前最合理的安装器评审结论
+
+### 可以进入评审的内容
+
+这些内容现在已经值得开评审：
+
+1. 是否需要 `install.sh` 预创建 `~/.openclaw/state/openmoss/`
+2. 是否需要 `doctor.sh` 新增 OpenMOSS state 检查
+3. 是否需要 `host-install-migration.md` 增加 OpenMOSS state 迁移章节
+4. 是否需要定义 schema version 升级规则
+5. 是否需要在 `install-prompt.md` 补充 OpenMOSS 治理能力说明
+
+### 还不能直接实现的内容
+
+这些内容现在还不应直接写进安装器：
+
+1. 自动迁移旧治理数据
+2. 自动修复 schema mismatch
+3. 强制初始化治理默认配置
+4. 把 GUI/治理特性直接写成用户安装承诺
+
+---
+
+## 准入矩阵
+
+| 准入项 | 当前状态 | 结论 |
+|--------|----------|------|
+| active 6-wave 功能闭环 | 已完成 | 可评审 |
+| 存储路径冻结 | 已完成 | 可评审 |
+| GUI/API 编译与测试 | 已完成 | 可评审 |
+| doctor 支撑 | 缺失 | 不可实装 |
+| migration 支撑 | 缺失 | 不可实装 |
+| live upgrade 演练 | 缺失 | 不可实装 |
+| install.sh 交付策略 | 缺失 | 不可实装 |
+| schema migration 机制 | 缺失 | 不可实装 |
+
+---
+
+## 建议下一步
+
+最合理的顺序不是直接改 `install.sh`，而是：
+
+1. 先执行 [`6-wave-closeout-regression-checklist.md`](/root/danghuangshang-openmoss-exec/docs/openmoss/6-wave-closeout-regression-checklist.md)
+2. 开一轮“安装器评审”而不是“安装器实现”
+3. 评审输出最小交付面：
+   - `doctor.sh` 增补项
+   - migration 文档增补项
+   - `install.sh` 是否只做目录预创建
+4. 只有完成 live upgrade 演练后，才允许真正进入 `install.sh` 修改
+
+---
+
+## 当前 verdict
+
+一句话结论：
+
+> **现在已经够资格讨论怎么把 OpenMOSS 治理层带进安装器体系，但还不够资格直接动安装器。**
+
+这正符合当前 SOP：  
+**先完成核心治理层收官，再进入交付评审，而不是让安装器替代验证。**
