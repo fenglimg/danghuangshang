@@ -1,6 +1,9 @@
 {
   "name": "boluo-gui-server",
   "type": "module",
+  "scripts": {
+    "test:openmoss": "node --test ../../tests/openmoss/task-core/task-core.test.js"
+  },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.18.2",

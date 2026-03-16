@@ -21,8 +21,23 @@
     - 一期 `filesystem-first` 存储策略
     - Wave 1-3 不改 `install.sh` 的准入规则
 - **Next**
-  - 进入 `ISS-OPENMOSS-002`
-  - 在 ADR 边界内建立 task core 最小模型与状态机
+  - 进入 `ISS-OPENMOSS-003`
+  - 在 task core 之上建立 ActivityLog 与最小任务 API
+
+- **2026-03-16 / Wave 2 completed**
+  - `ISS-OPENMOSS-002` 已完成
+  - 已建立：
+    - `gui/server/openmoss/task-core/` 独立模块
+    - `Task / Module / WorkItem` 最小模型
+    - `pending -> in_progress -> review -> done` 主状态机
+    - `rework / blocked` 扩展状态
+    - `filesystem-first` 存储抽象与 schema/index 初始化
+  - 已补自动测试：
+    - `tests/openmoss/task-core/task-core.test.js`
+  - 当前仍未进入：
+    - `install.sh`
+    - ActivityLog
+    - GUI 页面
 
 ---
 
