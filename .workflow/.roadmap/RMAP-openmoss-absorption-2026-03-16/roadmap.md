@@ -21,8 +21,8 @@
     - 一期 `filesystem-first` 存储策略
     - Wave 1-3 不改 `install.sh` 的准入规则
 - **Next**
-  - 进入 `ISS-OPENMOSS-004` 与 `ISS-OPENMOSS-005`
-  - 在统一任务状态和事件流上分别建立 review 闭环与 patrol blocked 恢复
+  - 进入 `ISS-OPENMOSS-006`
+  - 用真实任务、时间线、review queue 和 patrol alerts 数据开始 GUI 接入
 
 - **2026-03-16 / Wave 2 completed**
   - `ISS-OPENMOSS-002` 已完成
@@ -60,6 +60,22 @@
   - 当前仍未进入：
     - GUI 页面
     - review/patrol 子系统本体
+    - `install.sh`
+
+- **2026-03-16 / Wave 4 completed**
+  - `ISS-OPENMOSS-004` 与 `ISS-OPENMOSS-005` 已完成
+  - 已建立：
+    - `gui/server/openmoss/review/` ReviewRecord 与审查闭环
+    - `gui/server/openmoss/patrol/` PatrolAlert 与 stale scan
+    - review queue / task reviews 查询 API
+    - patrol alerts / manual patrol scan API
+  - 已验证：
+    - approve -> done
+    - reject -> rework
+    - stale task -> blocked
+    - patrol alert 可查询且含恢复建议
+  - 当前仍未进入：
+    - GUI 页面
     - `install.sh`
 
 ---
