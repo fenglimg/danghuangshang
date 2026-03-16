@@ -21,8 +21,8 @@
     - 一期 `filesystem-first` 存储策略
     - Wave 1-3 不改 `install.sh` 的准入规则
 - **Next**
-  - 进入 `ISS-OPENMOSS-006`
-  - 用真实任务、时间线、review queue 和 patrol alerts 数据开始 GUI 接入
+  - 进入 `ISS-OPENMOSS-007`
+  - 在现有治理页基础上增加真正可驱动状态变化的 review / patrol 操作入口
 
 - **2026-03-16 / Wave 2 completed**
   - `ISS-OPENMOSS-002` 已完成
@@ -76,6 +76,21 @@
     - patrol alert 可查询且含恢复建议
   - 当前仍未进入：
     - GUI 页面
+    - `install.sh`
+
+- **2026-03-16 / Wave 5 completed**
+  - `ISS-OPENMOSS-006` 已完成
+  - 已建立：
+    - GUI `治理` 页签
+    - 真实 task list / task detail / activity timeline
+    - 只读 review queue
+    - 只读 patrol alerts
+  - 已验证：
+    - 前端构建通过
+    - 治理页只读取真实 API，不依赖 mock 数据
+    - sessions / dashboard / system 等旧页面未被替换
+  - 当前仍未进入：
+    - review / patrol 的 GUI 操作入口
     - `install.sh`
 
 ---
