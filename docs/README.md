@@ -48,6 +48,7 @@
 | [架构详解](./architecture.md) | 三省六部映射、审批流程、多模型混搭 |
 | [菠萝王朝案例](./pineapple-dynasty.md) | 14 Agent 真实运行的完整案例 |
 | [上游同步策略](./upstream-sync.md) | `upstream-main` / `local-host-install` 分支同步方式 |
+| [OpenMOSS 吸收开发流程 SOP](./openmoss-integration-sop.md) | 三阶段集成、分支边界、`install.sh` 准入规则 |
 | [完整 FAQ](./faq.md) | 基础 + 技术常见问题 |
 | [飞书 Issue 回复](./feishu-issue-replies.md) | 飞书相关 GitHub Issue 汇总 |
 | [User Agreement](./user-agreement.md) | 用户协议 |

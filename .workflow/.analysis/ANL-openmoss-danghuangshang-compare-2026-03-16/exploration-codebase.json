@@ -1,0 +1,133 @@
+{
+  "project_type": "nodejs",
+  "project_root": "/root/danghuangshang",
+  "branch_context": {
+    "current_branch": "local-host-install",
+    "upstream_remote": "https://github.com/wanikua/danghuangshang.git",
+    "origin_remote": "git@github.com:fenglimg/danghuangshang.git",
+    "ahead_behind_vs_upstream_main": {
+      "behind": 0,
+      "ahead": 2
+    }
+  },
+  "relevant_files": [
+    {
+      "path": "/root/danghuangshang/README.md",
+      "relevance": "high",
+      "summary": "定义项目定位：基于 OpenClaw 的三省六部多 Agent 协作系统，强调角色组织和部署体验。"
+    },
+    {
+      "path": "/root/danghuangshang/docs/architecture.md",
+      "relevance": "high",
+      "summary": "展示 OpenClaw Gateway、bindings、skills、sessions_send/sessions_spawn 与各部门角色之间的总体架构。"
+    },
+    {
+      "path": "/root/danghuangshang/docs/sansheng-flow.md",
+      "relevance": "high",
+      "summary": "说明“内阁前置优化 + 都察院后置审查”的流程，但以消息与审查流程为主，非持久化任务状态机。"
+    },
+    {
+      "path": "/root/danghuangshang/docs/upstream-sync.md",
+      "relevance": "high",
+      "summary": "明确上游镜像层与本地定制层的分支治理策略，适合承载外部项目融合。"
+    },
+    {
+      "path": "/root/danghuangshang/docs/host-install-migration.md",
+      "relevance": "medium",
+      "summary": "说明本地分支聚焦宿主机直装迁移和运行面规范。"
+    },
+    {
+      "path": "/root/danghuangshang/docs/gui.md",
+      "relevance": "medium",
+      "summary": "描述 GUI 的目标是状态总览、会话、cron、token 和系统健康等运维可视化。"
+    },
+    {
+      "path": "/root/danghuangshang/gui/server/index.js",
+      "relevance": "high",
+      "summary": "后端 API 主要读取 ~/.openclaw 运行态数据，提供 status/sessions/cron/skills/channels/system metrics 等接口。"
+    },
+    {
+      "path": "/root/danghuangshang/gui/src/App.tsx",
+      "relevance": "medium",
+      "summary": "前端页签反映当前控制面范围：dashboard、court、departments、sessions、channels、cron、skills、system 等。"
+    },
+    {
+      "path": "/root/danghuangshang/gui/src/pages/CronJobs.tsx",
+      "relevance": "medium",
+      "summary": "展示 GUI 对 cron 任务的可视化管理能力。"
+    },
+    {
+      "path": "/root/danghuangshang/gui/src/pages/Skills.tsx",
+      "relevance": "medium",
+      "summary": "展示 GUI 对 OpenClaw skills 生态的浏览、安装、更新能力。"
+    }
+  ],
+  "patterns": [
+    {
+      "pattern": "role-driven collaboration over OpenClaw runtime",
+      "files": [
+        "/root/danghuangshang/README.md",
+        "/root/danghuangshang/docs/architecture.md",
+        "/root/danghuangshang/docs/sansheng-flow.md"
+      ],
+      "description": "三省六部是组织语义层，底座能力来自 OpenClaw gateway、skills、bindings 与 sessions。"
+    },
+    {
+      "pattern": "runtime observability without task database",
+      "files": [
+        "/root/danghuangshang/gui/server/index.js",
+        "/root/danghuangshang/gui/src/App.tsx",
+        "/root/danghuangshang/docs/gui.md"
+      ],
+      "description": "GUI 聚焦会话、消息、系统状态、cron、skills，而不是任务实体与状态流。"
+    },
+    {
+      "pattern": "downstream layering for local customization",
+      "files": [
+        "/root/danghuangshang/docs/upstream-sync.md",
+        "/root/danghuangshang/docs/host-install-migration.md"
+      ],
+      "description": "仓库已形成上游同步层与本地定制层分离的长期治理思路。"
+    }
+  ],
+  "constraints": [
+    "当前系统的主要运行时数据源是 ~/.openclaw，而不是独立数据库。",
+    "现有角色体系高度面向人类理解和渠道交互，不宜直接替换为纯技术角色名。",
+    "本地分支需要持续吸收 upstream 更新，因此新增能力应尽量采用 overlay 或边界清晰的集成方式。"
+  ],
+  "integration_points": [
+    {
+      "location": "/root/danghuangshang/gui/server/index.js",
+      "description": "未来最自然的切入点是新增 task/activity/review 相关 API，并在 GUI 中增加对应页面。"
+    },
+    {
+      "location": "/root/danghuangshang/docs/upstream-sync.md",
+      "description": "建议通过独立 integrate 分支验证 OpenMOSS 吸收方案，再回收进 local-host-install。"
+    },
+    {
+      "location": "/root/danghuangshang/docs/sansheng-flow.md",
+      "description": "可把当前‘前置优化/后置审查’映射到更显式的 Planner/Reviewer 工作流。"
+    }
+  ],
+  "external_reference": {
+    "repo": "uluckyXH/OpenMOSS",
+    "source": "DeepWiki MCP",
+    "key_points": [
+      "FastAPI + SQLite/SQLAlchemy 中间件",
+      "Task -> Module -> SubTask 分层",
+      "Planner / Executor / Reviewer / Patrol 角色",
+      "ActivityLog / ReviewRecord / RewardLog",
+      "WebUI: setup, tasks, agents, logs, prompts, scores, settings"
+    ]
+  },
+  "key_findings": [
+    "danghuangshang 是 OpenClaw 之上的组织化模板与部署方案。",
+    "OpenMOSS 是 OpenClaw 之上的任务编排与自治治理中间件。",
+    "两者运行时兼容，但抽象层次不同：一个偏角色语义，一个偏任务状态。",
+    "本地 fork 当前的分支治理方式适合分层吸收 OpenMOSS 的优秀能力。"
+  ],
+  "_metadata": {
+    "timestamp": "2026-03-16T00:00:00+08:00",
+    "exploration_scope": "本地 danghuangshang 仓库 + DeepWiki(OpenMOSS) 架构比对"
+  }
+}
