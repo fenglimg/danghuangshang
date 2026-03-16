@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'fs';
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { resolveOpenMossStateDir } from '../task-core/storage.js';
 import { createPatrolAlert } from './model.js';
@@ -16,6 +16,13 @@ function readJsonLines(filePath) {
     .split('\n')
     .filter((line) => line.trim())
     .map((line) => JSON.parse(line));
+}
+
+function writeJsonLinesAtomic(filePath, records) {
+  const tempPath = `${filePath}.tmp`;
+  const content = records.map((record) => JSON.stringify(record)).join('\n');
+  writeFileSync(tempPath, content ? `${content}\n` : '', 'utf-8');
+  renameSync(tempPath, filePath);
 }
 
 export class FilesystemPatrolStorage {
@@ -65,6 +72,44 @@ export class FilesystemPatrolStorage {
   hasOpenAlert(taskId) {
     const alerts = this.listTaskAlerts(taskId);
     return alerts.some((alert) => alert.status === 'open');
+  }
+
+  resolveOpenAlerts(taskId, input = {}) {
+    this.ensureInitialized();
+    const alertPath = this.#getTaskAlertPath(taskId);
+    if (!existsSync(alertPath)) {
+      return [];
+    }
+
+    const actor = typeof input.actor === 'string' && input.actor.trim() ? input.actor.trim() : 'system';
+    const note = typeof input.note === 'string' && input.note.trim() ? input.note.trim() : '';
+    const resolvedAt = input.resolvedAt || new Date().toISOString();
+    let resolvedCount = 0;
+
+    const nextAlerts = readJsonLines(alertPath).map((alert) => {
+      if (alert.status !== 'open') {
+        return alert;
+      }
+
+      resolvedCount += 1;
+      return {
+        ...alert,
+        status: 'resolved',
+        metadata: {
+          ...(alert.metadata && typeof alert.metadata === 'object' ? alert.metadata : {}),
+          resolvedAt,
+          resolvedBy: actor,
+          resolutionNote: note,
+        },
+      };
+    });
+
+    if (resolvedCount === 0) {
+      return [];
+    }
+
+    writeJsonLinesAtomic(alertPath, nextAlerts);
+    return nextAlerts.filter((alert) => alert.status === 'resolved');
   }
 
   #getTaskAlertPath(taskId) {

@@ -2351,8 +2351,19 @@ app.post('/api/openmoss/tasks/:taskId/claim', authMiddleware, (req, res) => {
       return res.status(400).json({ error: 'Invalid task ID' });
     }
 
+    const beforeTask = openMossTaskService.getTask(taskId);
     const result = openMossTaskService.claimTask(taskId, req.body || {});
-    res.json(result);
+    const resolvedAlerts = beforeTask?.status === 'blocked'
+      ? openMossPatrolService.resolveTaskAlerts(taskId, {
+        actor: req.body?.actor,
+        note: req.body?.note,
+      })
+      : [];
+
+    res.json({
+      ...result,
+      resolvedAlerts,
+    });
   } catch (err) {
     const statusCode = err.message.includes('not found') ? 404 : 400;
     res.status(statusCode).json({ error: err.message });
