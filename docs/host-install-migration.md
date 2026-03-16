@@ -107,6 +107,18 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/
 - 已有 guild / channel allowlist 或 mention 策略
 - 你已经验证过可用的 `model.primary`
 
+如果你暂时**不准备一次性启用全部 Discord Bot**，推荐做法是：
+
+- 保留 `install.sh` 生成的完整 `agents.list`
+- 只在 `channels.discord.accounts` 中保留当前已经有真实 token 的账号
+- 只在 `bindings` 中保留当前要真正接 Discord 消息的部门
+
+这样做的结果是：
+
+- **全量 Agent 拓扑已经预留**
+- 当前 live runtime 只登录你已经准备好的 Bot
+- 后续新增某个部门时，只需要补对应 `accounts.<id>` 和一条 `bindings`，不需要重做整体迁移
+
 不建议整份覆盖回旧配置，因为那样会把历史运行面的耦合和 patch 一起带回来。
 
 ---
@@ -181,6 +193,18 @@ bash ./install.sh
 ### 3. 迁移后只有部分 bot 能登录
 
 说明你只回填了现有 token，而没有补齐其余部门 bot。这不影响宿主机直装本身成功，只说明 **bot fleet 仍未完全补齐**。
+
+### 4. 我只想先启用部分 Discord Bot，其他部门先预留可以吗
+
+可以，推荐就这么做。
+
+建议状态是：
+
+- `agents.list` 保持全量部门定义
+- `channels.discord.accounts` 只保留已有真实 token 的账号
+- `bindings` 只保留当前要暴露到 Discord 的部门
+
+注意不要保留无意义的占位账号（例如 `default`），否则后续排查时容易混淆“真实 bot”与“历史残留”。
 
 ---
 

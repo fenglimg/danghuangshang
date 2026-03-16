@@ -156,6 +156,8 @@ nano ~/.openclaw/openclaw.json
 - `install.sh` 生成的是**结构基线**
 - 如果这是迁移场景，应从备份里回填真实 provider / token / gateway 参数
 - 不要把旧的混合 runtime 配置原封不动覆盖回去
+- 如果用户想先保留全量 Agent 架构、但暂时不绑定所有 Discord Bot：保留完整 `agents.list`，只填写已有 token 的 `accounts`，`bindings` 也只保留当前要启用的部门
+- 不要保留无意义的 `default` 账号占位；未准备好的部门先不写 `accounts` / `bindings`
 
 ### Discord 配置要点
 1. 去 https://discord.com/developers/applications 创建 Bot
@@ -215,6 +217,19 @@ nano ~/.openclaw/openclaw.json
 > - `api` 常用值是 `"openai-completions"`（OpenAI 兼容）或 `"anthropic-messages"`（Anthropic 官方）
 > - `model.primary` 格式为 `"provider名/model的id"`
 > - 如果当前 CLI 报 `applicationId` / `runTimeoutSeconds` / `subagents.maxConcurrent` 不支持，删除这些字段或运行 `openclaw doctor --fix`
+
+### Discord 多部门预留、按需启用
+
+如果用户希望和 `danghuangshang` 的组织结构保持一致，但暂时只启用少量 Discord Bot，要明确告诉用户：
+
+1. `agents.list` 应保留全量部门 Agent
+2. `channels.discord.accounts` 只保留已经拿到真实 token 的 Bot
+3. `bindings` 只保留当前真正要接消息的部门
+4. 后续新增某个部门时，只需要补这个部门的 `accounts.<id>` 和一条 `bindings`
+
+可以直接给用户这个原则：
+
+> “先把 Agent 结构对齐，再按需补 Bot 绑定；Agent 预留不等于现在就要把全部 Discord Bot 一次性开起来。”
 
 ### 飞书配置要点
 1. 去 https://open.feishu.cn/app 创建企业自建应用
