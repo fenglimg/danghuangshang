@@ -100,6 +100,8 @@ export default function Governance() {
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null)
 
   const bg = theme === "light" ? "bg-white border border-gray-200" : "bg-[#1a1a2e]"
   const sub = theme === "light" ? "text-gray-500" : "text-[#a3a3a3]"
@@ -198,8 +200,145 @@ export default function Governance() {
     return () => window.clearTimeout(timer)
   }, [fetchTaskDetail, selectedTaskId])
 
+  const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
+    setToast({ message, type })
+    window.setTimeout(() => {
+      setToast((current) => current?.message === message ? null : current)
+    }, 2600)
+  }, [])
+
+  const refreshGovernance = useCallback(async (taskId?: string | null) => {
+    await fetchBoard()
+    if (taskId) {
+      await fetchTaskDetail(taskId)
+    }
+  }, [fetchBoard, fetchTaskDetail])
+
+  const runReviewAction = useCallback(async (taskId: string, action: "approve" | "reject") => {
+    const note = window.prompt(
+      action === "approve" ? "填写审查通过备注（可留空）" : "填写打回原因",
+      action === "approve" ? "GUI control plane approval" : "Need follow-up changes before approval"
+    )
+
+    if (note === null) {
+      return
+    }
+
+    setActionLoading(`review:${taskId}:${action}`)
+    try {
+      const response = await fetch(`/api/openmoss/tasks/${encodeURIComponent(taskId)}/review`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          actor: "duchayuan",
+          action,
+          note,
+        }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(data.error || "审查操作失败")
+      }
+
+      await refreshGovernance(taskId)
+      showToast(action === "approve" ? "审查已通过" : "任务已打回返工")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "审查操作失败"
+      showToast(message, "error")
+    }
+    setActionLoading(null)
+  }, [authToken, refreshGovernance, showToast])
+
+  const runPatrolScan = useCallback(async () => {
+    const thresholdRaw = window.prompt("巡检超时阈值（分钟）", "60")
+    if (thresholdRaw === null) {
+      return
+    }
+
+    const thresholdMinutes = Number.parseInt(thresholdRaw, 10)
+    if (!Number.isInteger(thresholdMinutes) || thresholdMinutes <= 0) {
+      showToast("请输入有效的分钟数", "error")
+      return
+    }
+
+    setActionLoading("patrol-scan")
+    try {
+      const response = await fetch("/api/openmoss/patrol/scan", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          actor: "patrol",
+          thresholdMinutes,
+        }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(data.error || "巡检扫描失败")
+      }
+
+      await refreshGovernance(selectedTaskId)
+      showToast(`巡检完成：扫描 ${data.scanned ?? 0} 项，触发 ${data.triggered?.length ?? 0} 项`)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "巡检扫描失败"
+      showToast(message, "error")
+    }
+    setActionLoading(null)
+  }, [authToken, refreshGovernance, selectedTaskId, showToast])
+
+  const reclaimBlockedTask = useCallback(async (taskId: string) => {
+    const note = window.prompt("填写恢复认领备注（可留空）", "Patrol recovery via governance console")
+    if (note === null) {
+      return
+    }
+
+    setActionLoading(`claim:${taskId}`)
+    try {
+      const response = await fetch(`/api/openmoss/tasks/${encodeURIComponent(taskId)}/claim`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          actor: "silijian",
+          note,
+        }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(data.error || "恢复认领失败")
+      }
+
+      await refreshGovernance(taskId)
+      showToast("任务已恢复认领并回到进行中")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "恢复认领失败"
+      showToast(message, "error")
+    }
+    setActionLoading(null)
+  }, [authToken, refreshGovernance, showToast])
+
   return (
     <div className="space-y-4 sm:space-y-6">
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-lg border text-sm shadow-lg ${
+          toast.type === "success"
+            ? "bg-green-500/15 border-green-500/40 text-green-400"
+            : "bg-red-500/15 border-red-500/40 text-red-400"
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
       <div className={`${bg} rounded-lg p-4 sm:p-5`}>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -234,6 +373,13 @@ export default function Governance() {
               className="px-3 py-2 rounded-lg border border-[#d4a574]/30 text-[#d4a574] hover:bg-[#d4a574]/10 text-sm cursor-pointer"
             >
               ↻ 刷新治理面
+            </button>
+            <button
+              onClick={runPatrolScan}
+              disabled={actionLoading === "patrol-scan"}
+              className="px-3 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm cursor-pointer disabled:opacity-50"
+            >
+              {actionLoading === "patrol-scan" ? "巡检中..." : "⚠ 立即巡检"}
             </button>
           </div>
         </div>
@@ -327,6 +473,35 @@ export default function Governance() {
                   <div className={`mt-1 text-xs ${sub}`}>
                     owner: {selectedTask.owner || "未指定"} · 创建于 {new Date(selectedTask.createdAt).toLocaleString("zh-CN")}
                   </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {selectedTask.status === "review" && (
+                      <>
+                        <button
+                          onClick={() => runReviewAction(selectedTask.id, "approve")}
+                          disabled={actionLoading === `review:${selectedTask.id}:approve`}
+                          className="px-3 py-1.5 rounded-lg border border-green-500/30 text-green-400 hover:bg-green-500/10 text-xs cursor-pointer disabled:opacity-50"
+                        >
+                          {actionLoading === `review:${selectedTask.id}:approve` ? "处理中..." : "通过审查"}
+                        </button>
+                        <button
+                          onClick={() => runReviewAction(selectedTask.id, "reject")}
+                          disabled={actionLoading === `review:${selectedTask.id}:reject`}
+                          className="px-3 py-1.5 rounded-lg border border-orange-500/30 text-orange-400 hover:bg-orange-500/10 text-xs cursor-pointer disabled:opacity-50"
+                        >
+                          {actionLoading === `review:${selectedTask.id}:reject` ? "处理中..." : "打回返工"}
+                        </button>
+                      </>
+                    )}
+                    {selectedTask.status === "blocked" && (
+                      <button
+                        onClick={() => reclaimBlockedTask(selectedTask.id)}
+                        disabled={actionLoading === `claim:${selectedTask.id}`}
+                        className="px-3 py-1.5 rounded-lg border border-blue-500/30 text-blue-400 hover:bg-blue-500/10 text-xs cursor-pointer disabled:opacity-50"
+                      >
+                        {actionLoading === `claim:${selectedTask.id}` ? "处理中..." : "恢复认领"}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -412,15 +587,35 @@ export default function Governance() {
                 {reviewQueue.length === 0 ? (
                   <div className={`text-xs ${sub}`}>当前没有待审任务</div>
                 ) : reviewQueue.map((task) => (
-                  <button
+                  <div
                     key={task.id}
-                    onClick={() => setSelectedTaskId(task.id)}
-                    className="w-full text-left rounded-lg border border-[#d4a574]/10 p-3 hover:border-[#d4a574]/30 hover:bg-[#d4a574]/6 cursor-pointer"
+                    className="rounded-lg border border-[#d4a574]/10 p-3"
                   >
-                    <div className="font-medium text-sm">{task.title}</div>
-                    <div className={`mt-1 text-xs ${sub}`}>{task.id}</div>
-                    <div className={`mt-2 text-[11px] ${sub}`}>更新: {relTime(task.updatedAt)}</div>
-                  </button>
+                    <button
+                      onClick={() => setSelectedTaskId(task.id)}
+                      className="w-full text-left hover:text-[#d4a574] cursor-pointer"
+                    >
+                      <div className="font-medium text-sm">{task.title}</div>
+                      <div className={`mt-1 text-xs ${sub}`}>{task.id}</div>
+                      <div className={`mt-2 text-[11px] ${sub}`}>更新: {relTime(task.updatedAt)}</div>
+                    </button>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => runReviewAction(task.id, "approve")}
+                        disabled={actionLoading === `review:${task.id}:approve`}
+                        className="px-2.5 py-1 rounded-md border border-green-500/30 text-green-400 hover:bg-green-500/10 text-[11px] cursor-pointer disabled:opacity-50"
+                      >
+                        {actionLoading === `review:${task.id}:approve` ? "处理中..." : "通过"}
+                      </button>
+                      <button
+                        onClick={() => runReviewAction(task.id, "reject")}
+                        disabled={actionLoading === `review:${task.id}:reject`}
+                        className="px-2.5 py-1 rounded-md border border-orange-500/30 text-orange-400 hover:bg-orange-500/10 text-[11px] cursor-pointer disabled:opacity-50"
+                      >
+                        {actionLoading === `review:${task.id}:reject` ? "处理中..." : "打回"}
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -434,18 +629,31 @@ export default function Governance() {
                 {patrolAlerts.length === 0 ? (
                   <div className={`text-xs ${sub}`}>当前没有开放巡检告警</div>
                 ) : patrolAlerts.map((alert) => (
-                  <button
+                  <div
                     key={alert.id}
-                    onClick={() => setSelectedTaskId(alert.taskId)}
-                    className="w-full text-left rounded-lg border border-[#d4a574]/10 p-3 hover:border-[#d4a574]/30 hover:bg-[#d4a574]/6 cursor-pointer"
+                    className="rounded-lg border border-[#d4a574]/10 p-3"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium">{alert.taskId}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">{alert.status}</span>
+                    <button
+                      onClick={() => setSelectedTaskId(alert.taskId)}
+                      className="w-full text-left hover:text-[#d4a574] cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium">{alert.taskId}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">{alert.status}</span>
+                      </div>
+                      <div className="mt-1 text-xs">{alert.reason}</div>
+                      <div className={`mt-2 text-[11px] ${sub}`}>{alert.recommendation}</div>
+                    </button>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => reclaimBlockedTask(alert.taskId)}
+                        disabled={actionLoading === `claim:${alert.taskId}`}
+                        className="px-2.5 py-1 rounded-md border border-blue-500/30 text-blue-400 hover:bg-blue-500/10 text-[11px] cursor-pointer disabled:opacity-50"
+                      >
+                        {actionLoading === `claim:${alert.taskId}` ? "处理中..." : "恢复认领"}
+                      </button>
                     </div>
-                    <div className="mt-1 text-xs">{alert.reason}</div>
-                    <div className={`mt-2 text-[11px] ${sub}`}>{alert.recommendation}</div>
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
