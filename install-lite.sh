@@ -17,6 +17,46 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+apply_openclaw_subagent_streamto_hotfix() {
+    local cli="${1:-openclaw}"
+    local version root dist matches file
+
+    if ! command -v "$cli" >/dev/null 2>&1; then
+        return 0
+    fi
+    if ! command -v perl >/dev/null 2>&1; then
+        echo -e "  ${YELLOW}⚠ 未检测到 perl，跳过 OpenClaw subagent 兼容补丁${NC}"
+        return 0
+    fi
+
+    version=$("$cli" --version 2>/dev/null || echo "unknown")
+    root=$("$cli" status --json 2>/dev/null | node -e 'let data=""; process.stdin.on("data", (chunk) => data += chunk); process.stdin.on("end", () => { try { const root = JSON.parse(data)?.update?.root || ""; if (root) process.stdout.write(root); } catch (_) { process.exit(1); } });' 2>/dev/null || true)
+    dist="${root%/}/dist"
+    if [ -z "$root" ] || [ ! -d "$dist" ]; then
+        echo -e "  ${YELLOW}⚠ 未能定位 OpenClaw 安装目录，跳过 subagent 兼容补丁${NC}"
+        return 0
+    fi
+
+    matches=$(grep -R -F -l 'const streamTo = params.streamTo === "parent" ? "parent" : void 0;' "$dist" 2>/dev/null || true)
+    if [ -z "$matches" ]; then
+        echo -e "  ${GREEN}✓ OpenClaw subagent streamTo 兼容补丁已就绪${NC}"
+        return 0
+    fi
+
+    while IFS= read -r file; do
+        [ -n "$file" ] || continue
+        perl -0pi -e 's/const streamTo = params\.streamTo === "parent" \? "parent" : void 0;/const streamTo = runtime === "acp" \&\& params.streamTo === "parent" ? "parent" : void 0;/g' "$file"
+    done <<EOF
+$matches
+EOF
+
+    if grep -R -F -q 'const streamTo = params.streamTo === "parent" ? "parent" : void 0;' "$dist" 2>/dev/null; then
+        echo -e "  ${YELLOW}⚠ OpenClaw $version 的 subagent 兼容补丁未完全应用，请手动检查 $dist${NC}"
+    else
+        echo -e "  ${GREEN}✓ 已应用 OpenClaw $version 的 subagent streamTo 兼容补丁${NC}"
+    fi
+}
+
 # ---- 解析命令行参数 ----
 INSTALL_GUI=""
 for arg in "$@"; do
@@ -49,6 +89,8 @@ else
     echo "  bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/install.sh)"
     exit 1
 fi
+
+apply_openclaw_subagent_streamto_hotfix "$CLI_CMD"
 
 # ---- 选择模式 ----
 echo ""
@@ -716,6 +758,7 @@ echo "     d) 开启机器人能力，添加 im.message.receive_v1 事件"
 echo "     e) 事件接收选择 WebSocket 长连接"
 echo "     f) 把 appId/appSecret 填到配置文件的 silijian 位置"
 echo "     g) 创建版本并发布应用"
+echo "     h) 老环境如遇 streamTo/runtime=subagent 报错，重新运行 install-lite.sh 会自动补兼容补丁"
 echo ""
 echo "  3. 启动 Gateway："
 echo "     $CLI_CMD gateway --verbose"

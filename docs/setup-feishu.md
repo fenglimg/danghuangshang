@@ -21,6 +21,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/
 # 选择模式 2: 飞书单Bot模式
 ```
 
+> ⚠️ 如果你之前已经装过 OpenClaw 且飞书单 Bot 调度报 `streamTo is only supported for runtime=acp; got runtime=subagent`，重新运行 `install.sh` 即可。脚本现在会自动给受影响的 OpenClaw 版本补上兼容热修。
+
 ## 3. 创建飞书应用（只需 1 个）
 
 1. 打开 [飞书开放平台](https://open.feishu.cn/app)，创建企业自建应用（如「AI朝廷-司礼监」）
@@ -97,6 +99,7 @@ Bot @了不回？按这个顺序排查：
 4. **机器人能力**：确认开启了机器人能力，Bot 已加入目标群聊
 5. **@方式**：从弹出列表中选择，不能手打 "@xxx"
 6. **查看日志**：`journalctl --user -u openclaw-gateway --since "5 min ago" | grep -i "feishu\|lark"`
+7. **后台调度兼容补丁**：如果日志里出现 `streamTo is only supported for runtime=acp; got runtime=subagent`，重新运行 `install.sh`，它会自动修补 OpenClaw 的 `subagent`/`streamTo` 兼容问题
 
 > 📖 完整排查详见 [飞书配置指南](../飞书配置指南.md)
 

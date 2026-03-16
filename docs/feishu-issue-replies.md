@@ -17,6 +17,7 @@
 - 用户只看到司礼监一个 Bot，背后整个朝廷都在干活
 
 `install.sh` 飞书模式已更新为单 Bot 配置，飞书配置指南已重写。
+另外，安装脚本现在会自动修补受影响 OpenClaw 版本的 `subagent`/`streamTo` 兼容问题；如果老环境报 `streamTo is only supported for runtime=acp`，重新运行安装脚本即可。
 
 ---
 
