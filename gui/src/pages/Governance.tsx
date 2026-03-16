@@ -87,6 +87,25 @@ function eventLabel(type: string) {
   }
 }
 
+function actorLabel(actor: string) {
+  switch (actor) {
+    case "silijian": return "司礼监"
+    case "gongbu": return "工部"
+    case "duchayuan": return "都察院"
+    case "patrol": return "巡检"
+    case "emperor": return "用户"
+    default: return actor || "未知"
+  }
+}
+
+function alertStatusTone(status: string): { label: string; color: string; bg: string } {
+  switch (status) {
+    case "resolved": return { label: "已解除", color: "text-emerald-400", bg: "bg-emerald-500/20" }
+    case "open": return { label: "告警中", color: "text-red-400", bg: "bg-red-500/20" }
+    default: return { label: status || "未知", color: "text-gray-400", bg: "bg-gray-500/20" }
+  }
+}
+
 export default function Governance() {
   const { theme } = useTheme()
   const [tasks, setTasks] = useState<TaskItem[]>([])
@@ -110,6 +129,10 @@ export default function Governance() {
   const authToken = getAuthToken()
 
   const selectedTask = tasks.find((task) => task.id === selectedTaskId) || null
+  const taskTitleById = tasks.reduce<Record<string, string>>((acc, task) => {
+    acc[task.id] = task.title || task.id
+    return acc
+  }, {})
 
   const filteredTasks = tasks.filter((task) => {
     if (statusFilter !== "all" && task.status !== statusFilter) return false
@@ -456,7 +479,7 @@ export default function Governance() {
           <div className={`${bg} rounded-lg p-4`}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-[#d4a574]">任务详情与时间线</h3>
-              {selectedTask && <span className={`text-xs ${sub}`}>{selectedTask.id}</span>}
+              {selectedTask && <span className={`text-xs ${sub}`}>任务编号: {selectedTask.id}</span>}
             </div>
 
             {!selectedTask ? (
@@ -471,7 +494,7 @@ export default function Governance() {
                     </span>
                   </div>
                   <div className={`mt-1 text-xs ${sub}`}>
-                    owner: {selectedTask.owner || "未指定"} · 创建于 {new Date(selectedTask.createdAt).toLocaleString("zh-CN")}
+                    负责人: {selectedTask.owner || "未指定"} · 创建于 {new Date(selectedTask.createdAt).toLocaleString("zh-CN")}
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {selectedTask.status === "review" && (
@@ -506,7 +529,7 @@ export default function Governance() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="rounded-lg border border-[#d4a574]/10 p-3">
-                    <div className={`text-[10px] uppercase ${sub}`}>Review Records</div>
+                    <div className={`text-[10px] uppercase ${sub}`}>审查记录</div>
                     <div className="mt-2 space-y-2">
                       {taskReviews.length === 0 ? (
                         <div className={`text-xs ${sub}`}>暂无审查记录</div>
@@ -518,7 +541,7 @@ export default function Governance() {
                             </span>
                             <span className={`text-[10px] ${sub}`}>{relTime(review.createdAt)}</span>
                           </div>
-                          <div className="mt-1 text-xs">审查人: {review.reviewer}</div>
+                          <div className="mt-1 text-xs">审查人: {actorLabel(review.reviewer)}</div>
                           {review.note && <div className={`mt-1 text-xs ${sub}`}>{review.note}</div>}
                         </div>
                       ))}
@@ -526,16 +549,19 @@ export default function Governance() {
                   </div>
 
                   <div className="rounded-lg border border-[#d4a574]/10 p-3">
-                    <div className={`text-[10px] uppercase ${sub}`}>Patrol Alerts</div>
+                    <div className={`text-[10px] uppercase ${sub}`}>巡检告警历史</div>
                     <div className="mt-2 space-y-2">
                       {taskAlerts.length === 0 ? (
                         <div className={`text-xs ${sub}`}>暂无巡检告警</div>
                       ) : taskAlerts.map((alert) => (
                         <div key={alert.id} className="rounded-md border border-[#d4a574]/10 p-2">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">{alert.status}</span>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${alertStatusTone(alert.status).bg} ${alertStatusTone(alert.status).color}`}>
+                              {alertStatusTone(alert.status).label}
+                            </span>
                             <span className={`text-[10px] ${sub}`}>{relTime(alert.createdAt)}</span>
                           </div>
+                          <div className={`mt-1 text-[11px] ${sub}`}>来源: {actorLabel(alert.actor)}</div>
                           <div className="mt-1 text-xs">{alert.reason}</div>
                           <div className={`mt-1 text-xs ${sub}`}>{alert.recommendation}</div>
                         </div>
@@ -546,7 +572,7 @@ export default function Governance() {
 
                 <div className="rounded-lg border border-[#d4a574]/10 p-3">
                   <div className="flex items-center justify-between">
-                    <div className={`text-[10px] uppercase ${sub}`}>Activity Timeline</div>
+                    <div className={`text-[10px] uppercase ${sub}`}>活动时间线</div>
                     {detailLoading && <div className={`text-[10px] ${sub}`}>刷新中...</div>}
                   </div>
                   <div className="mt-3 space-y-3">
@@ -561,7 +587,7 @@ export default function Governance() {
                         <div className="flex-1 pb-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-sm font-medium">{eventLabel(event.type)}</span>
-                            <span className={`text-[10px] ${sub}`}>{event.actor}</span>
+                            <span className={`text-[10px] ${sub}`}>{actorLabel(event.actor)}</span>
                             <span className={`text-[10px] ${sub}`}>{relTime(event.createdAt)}</span>
                           </div>
                           <div className={`mt-1 text-xs ${sub}`}>
@@ -580,7 +606,7 @@ export default function Governance() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className={`${bg} rounded-lg p-4`}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-[#d4a574]">Review Queue</h3>
+                <h3 className="text-sm font-semibold text-[#d4a574]">待审队列</h3>
                 <span className={`text-xs ${sub}`}>{reviewQueue.length}</span>
               </div>
               <div className="space-y-2">
@@ -622,7 +648,7 @@ export default function Governance() {
 
             <div className={`${bg} rounded-lg p-4`}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-[#d4a574]">Patrol Alerts</h3>
+                <h3 className="text-sm font-semibold text-[#d4a574]">开放巡检告警</h3>
                 <span className={`text-xs ${sub}`}>{patrolAlerts.length}</span>
               </div>
               <div className="space-y-2">
@@ -638,10 +664,14 @@ export default function Governance() {
                       className="w-full text-left hover:text-[#d4a574] cursor-pointer"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium">{alert.taskId}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400">{alert.status}</span>
+                        <span className="text-sm font-medium">{taskTitleById[alert.taskId] || alert.taskId}</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${alertStatusTone(alert.status).bg} ${alertStatusTone(alert.status).color}`}>
+                          {alertStatusTone(alert.status).label}
+                        </span>
                       </div>
+                      <div className={`mt-1 text-[11px] ${sub}`}>任务编号: {alert.taskId}</div>
                       <div className="mt-1 text-xs">{alert.reason}</div>
+                      <div className={`mt-1 text-[11px] ${sub}`}>来源: {actorLabel(alert.actor)}</div>
                       <div className={`mt-2 text-[11px] ${sub}`}>{alert.recommendation}</div>
                     </button>
                     <div className="mt-3 flex gap-2">
