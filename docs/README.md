@@ -11,6 +11,7 @@
 | [领服务器](./server-setup.md) | Oracle/阿里云/腾讯云等免费服务器申请 | **可选** — 已有服务器跳过 |
 | [路径 A: Linux + Discord](./setup-linux-discord.md) | 一键脚本 + Discord 多 Bot | 🌟 新手首选（海外） |
 | [路径 B: Docker 部署](./setup-docker.md) | Docker 容器化部署 | 有 Docker 经验 |
+| [路径 B2: Docker/OpenClaw 迁移到宿主机](./host-install-migration.md) | 备份 `.openclaw` 后切到 `install.sh` 宿主机直装 | 已有运行中的老环境 |
 | [路径 C: macOS 本地](./setup-macos.md) | Homebrew 安装 | Mac 用户 |
 | [路径 D: Linux + 飞书](./setup-feishu.md) | 一键脚本 + 飞书单 Bot | 🌟 国内用户首选 |
 | [路径 E: 纯 WebUI](./setup-webui.md) | 浏览器直接对话，不需要 Bot | 极简体验 |
@@ -46,6 +47,7 @@
 |------|------|
 | [架构详解](./architecture.md) | 三省六部映射、审批流程、多模型混搭 |
 | [菠萝王朝案例](./pineapple-dynasty.md) | 14 Agent 真实运行的完整案例 |
+| [上游同步策略](./upstream-sync.md) | `upstream-main` / `local-host-install` 分支同步方式 |
 | [完整 FAQ](./faq.md) | 基础 + 技术常见问题 |
 | [飞书 Issue 回复](./feishu-issue-replies.md) | 飞书相关 GitHub Issue 汇总 |
 | [User Agreement](./user-agreement.md) | 用户协议 |

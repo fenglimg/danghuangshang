@@ -93,6 +93,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/
 > 🤖 不想看文档？把 [这段 Prompt](./docs/install-prompt.md) 丢给 AI 助手，让它带你装
 >
 > 已有 OpenClaw？用精简版：`bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/install-lite.sh)`
+>
+> 正在从 Docker / 历史 `.openclaw` 迁移到宿主机直装？先看 [宿主机直装迁移指南](./docs/host-install-migration.md)
 
 ---
 
