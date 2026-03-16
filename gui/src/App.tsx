@@ -11,6 +11,7 @@ const BRAND_SUBTITLE = import.meta.env.VITE_BRAND_SUBTITLE || 'Pineapple Dynasty
 
 // Lazy-loaded pages (code-splitting — reduces initial bundle, especially recharts-heavy pages)
 const Dashboard = lazy(() => import("./pages/Dashboard"))
+const Governance = lazy(() => import("./pages/Governance"))
 const Departments = lazy(() => import("./pages/Departments"))
 const TokenStats = lazy(() => import("./pages/TokenStats"))
 const MessageLogs = lazy(() => import("./pages/MessageLogs"))
@@ -29,6 +30,7 @@ const Skills = lazy(() => import("./pages/Skills"))
 const tabs: { key: TabName; label: string; icon: string }[] = [
   { key: "dashboard", label: "总览", icon: "📊" },
   { key: "court", label: "朝堂", icon: "🏯" },
+  { key: "governance", label: "治理", icon: "🧭" },
   { key: "departments", label: "部门", icon: "🏛️" },
   { key: "tokens", label: "Token统计", icon: "🔥" },
   { key: "sessions", label: "会话", icon: "💬" },
@@ -88,6 +90,7 @@ function App() {
         setActiveTab(tab as TabName)
       }} />
       case "court": return <Court />
+      case "governance": return <Governance />
       case "departments": return <Departments data={data} />
       case "tokens": return <TokenStats data={data} />
       case "sessions": return <Sessions initialFilter={sessionFilter} />
