@@ -21,8 +21,8 @@
     - 一期 `filesystem-first` 存储策略
     - Wave 1-3 不改 `install.sh` 的准入规则
 - **Next**
-  - 进入 `ISS-OPENMOSS-003`
-  - 在 task core 之上建立 ActivityLog 与最小任务 API
+  - 进入 `ISS-OPENMOSS-004` 与 `ISS-OPENMOSS-005`
+  - 在统一任务状态和事件流上分别建立 review 闭环与 patrol blocked 恢复
 
 - **2026-03-16 / Wave 2 completed**
   - `ISS-OPENMOSS-002` 已完成
@@ -38,6 +38,29 @@
     - `install.sh`
     - ActivityLog
     - GUI 页面
+
+- **2026-03-16 / Wave 3 completed**
+  - `ISS-OPENMOSS-003` 已完成
+  - 已建立：
+    - `gui/server/openmoss/activity-log/` 事件模型与 JSONL 存储
+    - `OpenMossTaskService` 服务层
+    - 最小任务 API：
+      - `GET /api/openmoss/tasks`
+      - `POST /api/openmoss/tasks`
+      - `GET /api/openmoss/tasks/:taskId`
+      - `GET /api/openmoss/tasks/:taskId/timeline`
+      - `POST /api/openmoss/tasks/:taskId/claim`
+      - `POST /api/openmoss/tasks/:taskId/submit`
+      - `POST /api/openmoss/tasks/:taskId/review`
+      - `POST /api/openmoss/tasks/:taskId/block`
+  - 已验证：
+    - `create / claim / submit / review / block` 五类事件
+    - 单任务时间线读取
+    - 一条完整任务事件序列
+  - 当前仍未进入：
+    - GUI 页面
+    - review/patrol 子系统本体
+    - `install.sh`
 
 ---
 

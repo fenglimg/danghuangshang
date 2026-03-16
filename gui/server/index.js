@@ -13,6 +13,7 @@ const require = createRequire(import.meta.url);
 import { WebSocketServer } from 'ws';
 import { exec as _exec } from 'child_process';
 import { promisify } from 'util';
+import { OpenMossTaskService } from './openmoss/activity-log/index.js';
 const execAsync = promisify(_exec);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -67,6 +68,7 @@ const AGENTS_DIR = join(STATE_DIR, 'agents');
 const CONFIG_PATH = existsSync(join(OPENCLAW_DIR, 'openclaw.json'))
   ? join(OPENCLAW_DIR, 'openclaw.json')
   : join(OPENCLAW_DIR, 'openclaw.json');
+const openMossTaskService = new OpenMossTaskService();
 
 app.use(cors());
 app.use(express.json());
@@ -104,6 +106,13 @@ function sanitizeAgentId(id) {
   if (!id || typeof id !== 'string') return null;
   if (/[\/\\.\s]/.test(id) || id.includes('..')) return null;
   if (!/^[a-zA-Z0-9_-]{1,64}$/.test(id)) return null;
+  return id;
+}
+
+function sanitizeTaskId(id) {
+  if (!id || typeof id !== 'string') return null;
+  if (/[\/\\.\s]/.test(id) || id.includes('..')) return null;
+  if (!/^[a-zA-Z0-9_-]{1,128}$/.test(id)) return null;
   return id;
 }
 
@@ -2269,6 +2278,125 @@ app.get('/api/system/metrics', authMiddleware, (req, res) => {
     res.json({ metrics: metricsBuffer, count: metricsBuffer.length, maxSize: METRICS_MAX });
   } catch (err) {
     res.status(500).json({ error: err.message, metrics: [] });
+  }
+});
+
+// ========== OPENMOSS TASK CORE / ACTIVITY LOG ==========
+app.get('/api/openmoss/tasks', authMiddleware, (req, res) => {
+  try {
+    const tasks = openMossTaskService.listTasks({
+      status: typeof req.query.status === 'string' ? req.query.status : undefined,
+      limit: req.query.limit,
+    });
+    res.json({ tasks, total: tasks.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message, tasks: [] });
+  }
+});
+
+app.post('/api/openmoss/tasks', authMiddleware, (req, res) => {
+  try {
+    const task = openMossTaskService.createTask(req.body || {});
+    res.status(201).json({ task });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/openmoss/tasks/:taskId', authMiddleware, (req, res) => {
+  try {
+    const taskId = sanitizeTaskId(req.params.taskId);
+    if (!taskId) {
+      return res.status(400).json({ error: 'Invalid task ID' });
+    }
+
+    const task = openMossTaskService.getTask(taskId);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    res.json({ task });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/openmoss/tasks/:taskId/timeline', authMiddleware, (req, res) => {
+  try {
+    const taskId = sanitizeTaskId(req.params.taskId);
+    if (!taskId) {
+      return res.status(400).json({ error: 'Invalid task ID', timeline: [] });
+    }
+
+    const task = openMossTaskService.getTask(taskId);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found', timeline: [] });
+    }
+
+    const timeline = openMossTaskService.getTaskTimeline(taskId);
+    res.json({ taskId, timeline });
+  } catch (err) {
+    res.status(500).json({ error: err.message, timeline: [] });
+  }
+});
+
+app.post('/api/openmoss/tasks/:taskId/claim', authMiddleware, (req, res) => {
+  try {
+    const taskId = sanitizeTaskId(req.params.taskId);
+    if (!taskId) {
+      return res.status(400).json({ error: 'Invalid task ID' });
+    }
+
+    const result = openMossTaskService.claimTask(taskId, req.body || {});
+    res.json(result);
+  } catch (err) {
+    const statusCode = err.message.includes('not found') ? 404 : 400;
+    res.status(statusCode).json({ error: err.message });
+  }
+});
+
+app.post('/api/openmoss/tasks/:taskId/submit', authMiddleware, (req, res) => {
+  try {
+    const taskId = sanitizeTaskId(req.params.taskId);
+    if (!taskId) {
+      return res.status(400).json({ error: 'Invalid task ID' });
+    }
+
+    const result = openMossTaskService.submitTask(taskId, req.body || {});
+    res.json(result);
+  } catch (err) {
+    const statusCode = err.message.includes('not found') ? 404 : 400;
+    res.status(statusCode).json({ error: err.message });
+  }
+});
+
+app.post('/api/openmoss/tasks/:taskId/review', authMiddleware, (req, res) => {
+  try {
+    const taskId = sanitizeTaskId(req.params.taskId);
+    if (!taskId) {
+      return res.status(400).json({ error: 'Invalid task ID' });
+    }
+
+    const result = openMossTaskService.reviewTask(taskId, req.body || {});
+    res.json(result);
+  } catch (err) {
+    const statusCode = err.message.includes('not found') ? 404 : 400;
+    res.status(statusCode).json({ error: err.message });
+  }
+});
+
+app.post('/api/openmoss/tasks/:taskId/block', authMiddleware, (req, res) => {
+  try {
+    const taskId = sanitizeTaskId(req.params.taskId);
+    if (!taskId) {
+      return res.status(400).json({ error: 'Invalid task ID' });
+    }
+
+    const result = openMossTaskService.blockTask(taskId, req.body || {});
+    res.json(result);
+  } catch (err) {
+    const statusCode = err.message.includes('not found') ? 404 : 400;
+    res.status(statusCode).json({ error: err.message });
   }
 });
 
