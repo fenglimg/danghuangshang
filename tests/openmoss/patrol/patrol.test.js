@@ -65,3 +65,45 @@ test('patrol scan does not duplicate open alerts for the same stale task', () =>
 
   taskService.taskStorage.clearAll();
 });
+
+test('recovering a blocked task resolves its open patrol alert', () => {
+  const rootDir = mkdtempSync(join(os.tmpdir(), 'openmoss-patrol-'));
+  const taskService = new OpenMossTaskService({ rootDir });
+  const patrolService = new PatrolService({ rootDir });
+
+  const created = taskService.createTask({
+    title: 'Patrol recovery flow',
+    actor: 'silijian',
+    status: 'in_progress',
+    createdAt: '2026-03-16T00:00:00.000Z',
+    updatedAt: '2026-03-16T00:00:00.000Z',
+  });
+
+  patrolService.scanTasks({
+    actor: 'patrol',
+    thresholdMinutes: 30,
+    now: '2026-03-16T01:00:00.000Z',
+  });
+  taskService.claimTask(created.id, {
+    actor: 'silijian',
+    note: 'recover after patrol block',
+  });
+  const resolvedAlerts = patrolService.resolveTaskAlerts(created.id, {
+    actor: 'silijian',
+    note: 'recover after patrol block',
+    resolvedAt: '2026-03-16T01:01:00.000Z',
+  });
+  const task = taskService.getTask(created.id);
+  const openAlerts = patrolService.listAlerts({ taskId: created.id, status: 'open' });
+  const allAlerts = patrolService.getTaskAlerts(created.id);
+
+  assert.equal(task.status, 'in_progress');
+  assert.equal(resolvedAlerts.length, 1);
+  assert.equal(openAlerts.length, 0);
+  assert.equal(allAlerts.length, 1);
+  assert.equal(allAlerts[0].status, 'resolved');
+  assert.equal(allAlerts[0].metadata.resolvedBy, 'silijian');
+  assert.equal(allAlerts[0].metadata.resolutionNote, 'recover after patrol block');
+
+  taskService.taskStorage.clearAll();
+});

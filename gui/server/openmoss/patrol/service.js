@@ -43,6 +43,10 @@ export class PatrolService {
     return this.patrolStorage.listTaskAlerts(taskId);
   }
 
+  resolveTaskAlerts(taskId, input = {}) {
+    return this.patrolStorage.resolveOpenAlerts(taskId, input);
+  }
+
   scanTasks(input = {}) {
     const thresholdMinutes = Number.isFinite(input.thresholdMinutes) ? input.thresholdMinutes : 60;
     const actor = typeof input.actor === 'string' && input.actor.trim() ? input.actor.trim() : 'patrol';
