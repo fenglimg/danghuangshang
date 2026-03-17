@@ -1,6 +1,6 @@
 # OpenMOSS 安装器评审准入评估
 
-> Status: Assessment  
+> Status: Installer Review In Progress  
 > Scope: 判断当前 6-wave active scope 是否已具备进入 `install.sh` / migration / doctor 评审的前提
 
 ← [返回文档索引](../README.md) | [返回 OpenMOSS SOP](../openmoss-integration-sop.md)
@@ -17,6 +17,12 @@
 
 - **可以评审**
 - **还不应直接落安装器改动**
+
+补充说明：
+
+- `2026-03-17` 已完成 `L3` GUI 人工联调收官
+- 当前已开始 installer review 第一波改造：`doctor.sh` 与 migration 文档补充 OpenMOSS state 规则
+- 当前仍然没有进入 `install.sh` 实装阶段
 
 ---
 
@@ -148,39 +154,51 @@
 
 ---
 
-## C. 当前不具备，不能直接进入安装器实现
+## B. 部分具备，可进入评审但不能直接实现（续）
 
-### C1. `doctor.sh` 还不理解 OpenMOSS 治理状态
+### B4. `doctor.sh` 已开始理解 OpenMOSS 治理状态，但仍是只读校验
 
-判定：**未具备**
+判定：**部分具备**
 
 证据：
 
-- 当前 `doctor.sh` 只检查 OpenClaw/配置/Discord 等传统项：
+- `doctor.sh` 已新增 OpenMOSS state 检查：
   - [doctor.sh](/root/danghuangshang-openmoss-exec/doctor.sh)
-- 未发现：
-  - `~/.openclaw/state/openmoss/` 检查
-  - schema version 检查
-  - task/review/patrol 数据一致性检查
+- 已覆盖：
+  - `~/.openclaw/state/openmoss/` 是否存在
+  - `meta/schema-version.json` 是否存在
+  - `tasks/events/reviews/patrol-alerts` 目录与基础数量概览
+- 仍未覆盖：
+  - 自动修复
+  - schema migration runner
+  - live data reconciliation
 
-结论：
+判断理由：
 
-- 在 `doctor` 未扩展前，不应把 OpenMOSS 目录初始化或修复责任直接下放给安装器
+- 这足以支撑 installer review 第一波
+- 但还不足以把 OpenMOSS 修复责任直接下放给安装器
 
-### C2. 迁移文档还没有 OpenMOSS 状态目录章节
+### B5. 迁移文档已补 OpenMOSS 状态目录规则，但仍缺 live upgrade 演练
 
-判定：**未具备**
+判定：**部分具备**
 
 证据：
 
 - [host-install-migration.md](/root/danghuangshang-openmoss-exec/docs/host-install-migration.md)
 - [install-prompt.md](/root/danghuangshang-openmoss-exec/docs/install-prompt.md)
 
-当前问题：
+当前状态：
 
-- 文档里没有 `state/openmoss` 目录的备份 / 升级 / 保留规则
-- 没有说明老环境升级时新目录如何出现
-- 没有说明“已有 `.openclaw` 但没有 OpenMOSS state”时如何非破坏接入
+- 文档已明确：
+  - `~/.openclaw/state/openmoss/` 属于运行态治理数据
+  - 旧环境如无该目录，不应预先创建空目录
+  - 它应在 GUI/API 首次使用时惰性创建
+  - 迁移时应跟随 `~/.openclaw` 一并备份与保留
+- 仍未完成：
+  - live upgrade 演练记录
+  - 基于真实老环境的升级验收
+
+## C. 当前不具备，不能直接进入安装器实现
 
 ### C3. `install.sh` 还没有任何 OpenMOSS 交付面约定
 
@@ -247,8 +265,8 @@
 | active 6-wave 功能闭环 | 已完成 | 可评审 |
 | 存储路径冻结 | 已完成 | 可评审 |
 | GUI/API 编译与测试 | 已完成 | 可评审 |
-| doctor 支撑 | 缺失 | 不可实装 |
-| migration 支撑 | 缺失 | 不可实装 |
+| doctor 支撑 | 已补首轮只读检查 | 仍不可实装 |
+| migration 支撑 | 已补目录规则文档 | 仍不可实装 |
 | live upgrade 演练 | 缺失 | 不可实装 |
 | install.sh 交付策略 | 缺失 | 不可实装 |
 | schema migration 机制 | 缺失 | 不可实装 |
@@ -259,12 +277,11 @@
 
 最合理的顺序不是直接改 `install.sh`，而是：
 
-1. 先执行 [`6-wave-closeout-regression-checklist.md`](/root/danghuangshang-openmoss-exec/docs/openmoss/6-wave-closeout-regression-checklist.md)
-2. 开一轮“安装器评审”而不是“安装器实现”
-3. 评审输出最小交付面：
-   - `doctor.sh` 增补项
-   - migration 文档增补项
-   - `install.sh` 是否只做目录预创建
+1. 已完成 [`6-wave-closeout-regression-checklist.md`](/root/danghuangshang-openmoss-exec/docs/openmoss/6-wave-closeout-regression-checklist.md)
+2. 继续 installer review 第一波：
+   - `doctor.sh` 首轮检查是否足够
+   - migration 文档是否覆盖旧环境惰性接入
+3. 下一步进入 live upgrade rehearsal 设计与执行
 4. 只有完成 live upgrade 演练后，才允许真正进入 `install.sh` 修改
 
 ---
@@ -273,7 +290,7 @@
 
 一句话结论：
 
-> **现在已经够资格讨论怎么把 OpenMOSS 治理层带进安装器体系，但还不够资格直接动安装器。**
+> **现在已经完成治理层收官，并且 installer review 第一波已经启动；但在 live upgrade 演练完成前，仍不够资格直接动安装器。**
 
 这正符合当前 SOP：  
 **先完成核心治理层收官，再进入交付评审，而不是让安装器替代验证。**

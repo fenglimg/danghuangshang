@@ -1,6 +1,6 @@
 # OpenMOSS 6-Wave 收官回归清单
 
-> Status: Active  
+> Status: Completed  
 > Scope: `Wave 1 -> Wave 6` 收官验证
 
 ← [返回文档索引](../README.md) | [返回 ADR-001](./adr-001-absorption-boundary.md)
@@ -46,6 +46,8 @@
 - `f5e3c5e` `feat: add openmoss review and patrol workflows`
 - `710be30` `feat: add openmoss governance gui`
 - `209c2ef` `feat: add governance control actions`
+- `bd49ce0` `fix: resolve patrol alerts on task reclaim`
+- `5e76d90` `feat: localize governance labels for L3 review`
 
 ---
 
@@ -230,3 +232,52 @@ npm run build
 原因很简单：
 
 > 现在已经具备治理能力闭环，但是否进入安装器，不取决于“功能有没有写完”，而取决于“升级路径和交付路径是否已经严谨”。 
+
+---
+
+## 2026-03-17 执行记录
+
+本轮收官回归已实际完成，结论为：`PASS`。
+
+### L0: 静态基线
+
+- [x] ADR 仍然明确规定 `Wave 1-3` 不改 `install.sh`
+- [x] OpenMOSS 存储路径仍固定为 `~/.openclaw/state/openmoss/`
+- [x] 组织语义层与系统职责层没有重新耦合
+- [x] 当前 active scope 没有混入 rules / prompt / notification / scoring
+
+### L1: 自动化回归
+
+- [x] `npm run test:openmoss` 通过
+- [x] `node --check gui/server/index.js` 通过
+- [x] `npx eslint src/pages/Governance.tsx src/App.tsx src/types.ts` 通过
+- [x] `npm run build` 通过
+
+### L2: API 行为回归
+
+- [x] approve 主链路通过：`create -> claim -> submit -> review -> done`
+- [x] reject/rework 链路通过：`review -> rework`
+- [x] patrol/blocked 链路通过：stale 任务可进入 `blocked`
+- [x] recover-claim 链路通过：`blocked -> in_progress`
+- [x] 恢复认领后全局 `Patrol Alerts` 与任务详情已保持一致
+
+### L3: GUI 闭环回归
+
+- [x] 任务流列表与状态筛选有效
+- [x] 选中任务后时间线、审查记录、巡检告警联动刷新
+- [x] review queue 中“通过 / 打回”可驱动真实状态变化
+- [x] patrol alerts 中“恢复认领”可驱动真实状态变化
+- [x] 顶部“立即巡检”可触发真实 patrol scan
+- [x] 本轮人工联调已完成 `approve`、`reject`、`patrol block`、`reclaim` 四类核心 GUI 闭环
+
+### L4: 数据面回归
+
+- [x] `meta/schema-version.json` 存在
+- [x] `tasks/*.json`、`events/*.jsonl`、`reviews/*.jsonl`、`patrol-alerts/*.jsonl` 已通过临时隔离 HOME 的真实写盘验证
+- [x] task snapshot、timeline、review、alert 之间可相互对应
+
+### 收官结论
+
+- [x] `Wave 1 -> Wave 6` active scope 已收官
+- [x] 当前阶段可以转入 installer review
+- [x] 当前阶段仍不应直接进入 `install.sh` 实装
