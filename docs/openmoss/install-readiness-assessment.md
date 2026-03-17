@@ -225,6 +225,18 @@
 
 - 现在直接改 `install.sh`，仍然是“先装上再试”的风险模式
 
+更新：
+
+- 已新增一条**提示型** OpenMOSS 交付说明到 [install.sh](/root/danghuangshang-openmoss-exec/install.sh)
+- 该说明只负责解释：
+  - `state/openmoss` 不会在安装阶段预创建
+  - 首次治理使用时会惰性创建
+  - 建议先运行 `doctor.sh` 再进入 GUI 验证
+
+因此，当前状态已从“完全没有交付面约定”收敛为：
+
+> **已有最小提示型交付约定，但仍没有初始化/迁移级实现。**
+
 ### C4. 还没有基于 installer implementation 的主运行面增量升级演练
 
 判定：**未具备**
@@ -273,7 +285,7 @@
 | doctor 支撑 | 已补首轮只读检查 | 仍不可实装 |
 | migration 支撑 | 已补目录规则文档 | 仍不可实装 |
 | live upgrade 演练 | 已完成快照级 rehearsal | 仍不可实装 |
-| install.sh 交付策略 | 已由 ADR-002 冻结 | 仍未实装 |
+| install.sh 交付策略 | 已由 ADR-002 冻结，且已落一条提示型说明 | 仍未达到初始化/迁移级实装 |
 | schema migration 机制 | 缺失 | 不可实装 |
 
 ---
