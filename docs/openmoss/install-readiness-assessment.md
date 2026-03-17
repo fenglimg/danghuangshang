@@ -117,23 +117,28 @@
 - 这说明“可以讨论如何迁移”
 - 但还不能把 schema 升级责任直接交给 `install.sh`
 
-### B2. GUI / API 闭环已完成，但 live upgrade 过程未验证
+### B2. GUI / API 闭环已完成，并已完成首轮 live upgrade rehearsal
 
 判定：**部分具备**
 
 证据：
 
 - API 与 GUI 都已经完成
-- 但当前验证发生在独立 worktree 与 detached HEAD 上
-- 尚未完成：
-  - `local-host-install` 集成验证
-  - 老环境增量升级验证
-  - 现有用户目录上的非破坏性验证
+- 已完成一次基于真实旧环境快照的 live upgrade rehearsal：
+  - [live-upgrade-rehearsal-2026-03-17.md](/root/danghuangshang-openmoss-exec/docs/openmoss/live-upgrade-rehearsal-2026-03-17.md)
+- 验证结论：
+  - 旧配置未被破坏
+  - `state/openmoss` 在未使用治理能力前保持不存在
+  - 升级 GUI 能读旧系统并写新治理数据
+- 仍未完成：
+  - `local-host-install` 分支级集成验证
+  - 主运行面上的 install-path rehearsal
+  - 基于最终 installer policy 的演练
 
 判断理由：
 
-- 这足以进入评审
-- 但不足以直接改安装器
+- 这已经不再是“完全未验证”
+- 但仍不足以直接改安装器
 
 ### B3. 新目录按需惰性创建可行，但 installer policy 还未定义
 
@@ -178,7 +183,7 @@
 - 这足以支撑 installer review 第一波
 - 但还不足以把 OpenMOSS 修复责任直接下放给安装器
 
-### B5. 迁移文档已补 OpenMOSS 状态目录规则，但仍缺 live upgrade 演练
+### B5. 迁移文档已补 OpenMOSS 状态目录规则，并与 rehearsal 结论对齐
 
 判定：**部分具备**
 
@@ -195,7 +200,7 @@
   - 它应在 GUI/API 首次使用时惰性创建
   - 迁移时应跟随 `~/.openclaw` 一并备份与保留
 - 仍未完成：
-  - live upgrade 演练记录
+  - 基于最终 installer policy 的 live upgrade 演练
   - 基于真实老环境的升级验收
 
 ## C. 当前不具备，不能直接进入安装器实现
@@ -267,7 +272,7 @@
 | GUI/API 编译与测试 | 已完成 | 可评审 |
 | doctor 支撑 | 已补首轮只读检查 | 仍不可实装 |
 | migration 支撑 | 已补目录规则文档 | 仍不可实装 |
-| live upgrade 演练 | 缺失 | 不可实装 |
+| live upgrade 演练 | 已完成快照级 rehearsal | 仍不可实装 |
 | install.sh 交付策略 | 缺失 | 不可实装 |
 | schema migration 机制 | 缺失 | 不可实装 |
 
@@ -281,8 +286,9 @@
 2. 继续 installer review 第一波：
    - `doctor.sh` 首轮检查是否足够
    - migration 文档是否覆盖旧环境惰性接入
-3. 下一步进入 live upgrade rehearsal 设计与执行
-4. 只有完成 live upgrade 演练后，才允许真正进入 `install.sh` 修改
+3. 下一步收敛 installer policy：`install.sh` 是否只做目录策略/提示
+4. 在 installer policy 收敛后，再做一轮贴近主运行面的升级演练
+5. 只有完成上述演练后，才允许真正进入 `install.sh` 修改
 
 ---
 
@@ -290,7 +296,7 @@
 
 一句话结论：
 
-> **现在已经完成治理层收官，并且 installer review 第一波已经启动；但在 live upgrade 演练完成前，仍不够资格直接动安装器。**
+> **现在已经完成治理层收官、installer review 第一波也已启动，并完成了一次真实旧环境快照级 rehearsal；但在 installer policy 收敛前，仍不够资格直接动安装器。**
 
 这正符合当前 SOP：  
 **先完成核心治理层收官，再进入交付评审，而不是让安装器替代验证。**
