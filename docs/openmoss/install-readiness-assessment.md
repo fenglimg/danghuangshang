@@ -22,6 +22,7 @@
 
 - `2026-03-17` 已完成 `L3` GUI 人工联调收官
 - 当前已开始 installer review 第一波改造：`doctor.sh` 与 migration 文档补充 OpenMOSS state 规则
+- `2026-03-17` 已通过 [ADR-002](/root/danghuangshang-openmoss-exec/docs/openmoss/adr-002-installer-minimum-delivery-policy.md) 冻结安装器最小交付策略
 - 当前仍然没有进入 `install.sh` 实装阶段
 
 ---
@@ -133,14 +134,14 @@
 - 仍未完成：
   - `local-host-install` 分支级集成验证
   - 主运行面上的 install-path rehearsal
-  - 基于最终 installer policy 的演练
+  - 基于最终 installer implementation 的演练
 
 判断理由：
 
 - 这已经不再是“完全未验证”
 - 但仍不足以直接改安装器
 
-### B3. 新目录按需惰性创建可行，但 installer policy 还未定义
+### B3. 新目录按需惰性创建可行，且 installer policy 已冻结
 
 判定：**部分具备**
 
@@ -155,7 +156,7 @@
 判断理由：
 
 - 这意味着严格来说不一定非要 `install.sh` 预创建目录
-- 但是否预创建、是否做权限检查、是否做备份提示，还没形成交付策略
+- 而且现在已经通过 ADR-002 冻结为“不预创建目录”的最小交付策略
 
 ---
 
@@ -183,7 +184,7 @@
 - 这足以支撑 installer review 第一波
 - 但还不足以把 OpenMOSS 修复责任直接下放给安装器
 
-### B5. 迁移文档已补 OpenMOSS 状态目录规则，并与 rehearsal 结论对齐
+### B5. 迁移文档已补 OpenMOSS 状态目录规则，并与 rehearsal / policy 结论对齐
 
 判定：**部分具备**
 
@@ -200,7 +201,7 @@
   - 它应在 GUI/API 首次使用时惰性创建
   - 迁移时应跟随 `~/.openclaw` 一并备份与保留
 - 仍未完成：
-  - 基于最终 installer policy 的 live upgrade 演练
+  - 基于最终 installer implementation 的贴近主运行面演练
   - 基于真实老环境的升级验收
 
 ## C. 当前不具备，不能直接进入安装器实现
@@ -224,17 +225,16 @@
 
 - 现在直接改 `install.sh`，仍然是“先装上再试”的风险模式
 
-### C4. 还没有针对老环境的增量升级演练
+### C4. 还没有基于 installer implementation 的主运行面增量升级演练
 
 判定：**未具备**
 
 当前缺口：
 
-- 没有拿现有 `~/.openclaw` live 环境做一次升级演练
-- 没有验证：
-  - 旧配置不变
-  - 新治理目录惰性出现
-  - GUI 升级后可读旧系统又可写新治理数据
+- 已完成快照级 rehearsal，但还没有完成：
+  - 基于最终 installer implementation 的主运行面演练
+  - `local-host-install` 路径下的真实回放
+  - 安装器视角的升级验收记录
 
 这项是进入安装器实现前的硬前提。
 
@@ -246,11 +246,11 @@
 
 这些内容现在已经值得开评审：
 
-1. 是否需要 `install.sh` 预创建 `~/.openclaw/state/openmoss/`
+1. 是否按 ADR-002 保持 `install.sh` 不预创建 `~/.openclaw/state/openmoss/`
 2. 是否需要 `doctor.sh` 新增 OpenMOSS state 检查
 3. 是否需要 `host-install-migration.md` 增加 OpenMOSS state 迁移章节
 4. 是否需要定义 schema version 升级规则
-5. 是否需要在 `install-prompt.md` 补充 OpenMOSS 治理能力说明
+5. 是否需要在后续 implementation 中加入最小提示型改动
 
 ### 还不能直接实现的内容
 
@@ -273,7 +273,7 @@
 | doctor 支撑 | 已补首轮只读检查 | 仍不可实装 |
 | migration 支撑 | 已补目录规则文档 | 仍不可实装 |
 | live upgrade 演练 | 已完成快照级 rehearsal | 仍不可实装 |
-| install.sh 交付策略 | 缺失 | 不可实装 |
+| install.sh 交付策略 | 已由 ADR-002 冻结 | 仍未实装 |
 | schema migration 机制 | 缺失 | 不可实装 |
 
 ---
@@ -283,12 +283,12 @@
 最合理的顺序不是直接改 `install.sh`，而是：
 
 1. 已完成 [`6-wave-closeout-regression-checklist.md`](/root/danghuangshang-openmoss-exec/docs/openmoss/6-wave-closeout-regression-checklist.md)
-2. 继续 installer review 第一波：
-   - `doctor.sh` 首轮检查是否足够
-   - migration 文档是否覆盖旧环境惰性接入
-3. 下一步收敛 installer policy：`install.sh` 是否只做目录策略/提示
-4. 在 installer policy 收敛后，再做一轮贴近主运行面的升级演练
-5. 只有完成上述演练后，才允许真正进入 `install.sh` 修改
+2. installer review 第一波已完成：
+   - `doctor.sh` 首轮检查已落地
+   - migration 文档已覆盖旧环境惰性接入
+3. installer policy 已由 ADR-002 冻结
+4. 下一步评估是否需要最小 install-path implementation
+5. 只有完成基于 ADR-002 的 implementation / validation，才允许真正进入 `install.sh` 修改
 
 ---
 
@@ -296,7 +296,7 @@
 
 一句话结论：
 
-> **现在已经完成治理层收官、installer review 第一波也已启动，并完成了一次真实旧环境快照级 rehearsal；但在 installer policy 收敛前，仍不够资格直接动安装器。**
+> **现在已经完成治理层收官、installer review 第一波、真实旧环境快照级 rehearsal，并冻结了安装器最小交付策略；但在按 ADR-002 完成 implementation / validation 前，仍不应直接动安装器主流程。**
 
 这正符合当前 SOP：  
 **先完成核心治理层收官，再进入交付评审，而不是让安装器替代验证。**
