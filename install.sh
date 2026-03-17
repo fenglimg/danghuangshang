@@ -23,6 +23,8 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+FORK_DOCTOR_RAW_URL="${FORK_DOCTOR_RAW_URL:-https://raw.githubusercontent.com/fenglimg/danghuangshang/integrate/local-host-install-openmoss/doctor.sh}"
 
 apply_openclaw_subagent_streamto_hotfix() {
     local cli="${1:-openclaw}"
@@ -62,6 +64,19 @@ EOF
     else
         echo -e "  ${GREEN}✓ 已应用 OpenClaw $version 的 subagent streamTo 兼容补丁${NC}"
     fi
+}
+
+resolve_doctor_script_path() {
+    local candidate
+
+    for candidate in "$SCRIPT_DIR/doctor.sh" "$PWD/doctor.sh"; do
+        if [ -f "$candidate" ]; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+
+    return 1
 }
 
 # ---- 系统检测 ----
@@ -1256,13 +1271,18 @@ echo ""
 echo ""
 echo -e "${YELLOW}[自检] 运行 doctor.sh 检查安装状态...${NC}"
 echo ""
-# [M-04] 优先下载最新 doctor.sh 到工作区，确保路径始终可用
-if command -v curl &>/dev/null; then
-    curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/doctor.sh -o "$WORKSPACE/doctor.sh" 2>/dev/null || true
-fi
-if [ -f "$WORKSPACE/doctor.sh" ]; then
-    bash "$WORKSPACE/doctor.sh" 2>/dev/null || true
+# 优先运行与当前 install.sh 同交付面的 doctor.sh，避免与 upstream 版本分叉
+DOCTOR_LOCAL_SOURCE="$(resolve_doctor_script_path || true)"
+if [ -n "$DOCTOR_LOCAL_SOURCE" ]; then
+    bash "$DOCTOR_LOCAL_SOURCE" 2>/dev/null || true
 else
-    echo -e "${CYAN}跳过自检（可手动运行 bash doctor.sh）${NC}"
+    if command -v curl &>/dev/null; then
+        curl -fsSL "$FORK_DOCTOR_RAW_URL" -o "$WORKSPACE/doctor.sh" 2>/dev/null || true
+    fi
+    if [ -f "$WORKSPACE/doctor.sh" ]; then
+        bash "$WORKSPACE/doctor.sh" 2>/dev/null || true
+    else
+        echo -e "${CYAN}跳过自检（可手动运行 bash doctor.sh）${NC}"
+    fi
 fi
 echo ""

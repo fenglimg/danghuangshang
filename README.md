@@ -88,7 +88,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/
 
 **3. 在 Discord @你的 Bot 说话** — 完成！
 
-> 🏥 遇到问题？`bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/doctor.sh)` 一键诊断
+> 🏥 遇到问题？`bash <(curl -fsSL https://raw.githubusercontent.com/fenglimg/danghuangshang/integrate/local-host-install-openmoss/doctor.sh)` 一键诊断
 >
 > 🤖 不想看文档？把 [这段 Prompt](./docs/install-prompt.md) 丢给 AI 助手，让它带你装
 >
@@ -369,7 +369,7 @@ bash scripts/memory-backup.sh --dry-run
 <summary><h2>🏥 配置诊断</h2></summary>
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/doctor.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/fenglimg/danghuangshang/integrate/local-host-install-openmoss/doctor.sh)
 ```
 
 **@everyone 不触发？** → 每个 Bot 都要开 Message Content Intent + Server Members Intent（[Discord Developer Portal](https://discord.com/developers/applications) → Bot 页面 → Privileged Gateway Intents）
