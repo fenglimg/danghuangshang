@@ -115,7 +115,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/
   ├─→ 内阁（首辅）── Prompt 增强：理解意图、引导追问、生成执行计划
   │ ←─┘ 返回优化后的 Prompt + Plan
   │
-  ├─→ @兵部 @户部 @礼部 …（按 Plan 派发）
+  ├─→ <@兵部BotUserId> <@户部BotUserId> <@礼部BotUserId> …（按 Plan 派发）
   │
   └─→ 都察院 ── 代码 push 到 GitHub 时自动审查
        └─→ ✅ 通过 / ❌ 打回修改
@@ -125,12 +125,12 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/
 
 ```
 皇帝（你）
-  ├─→ @兵部 写个登录 API        ← 直接指挥，跳过司礼监
-  ├─→ @户部 查本月开销
-  └─→ @都察院 审查这个 PR
+  ├─→ 在 Discord 客户端真实 mention 兵部 Bot，写个登录 API        ← 直接指挥，跳过司礼监
+  ├─→ 在 Discord 客户端真实 mention 户部 Bot，查本月开销
+  └─→ 在 Discord 客户端真实 mention 都察院 Bot，审查这个 PR
 ```
 
-> 💡 Discord 多 Bot 模式下，每个部门都是独立 Bot，你可以直接 @任意部门下达指令，无需经过司礼监。复杂任务推荐走司礼监（自动内阁优化），简单任务直接 @对应部门更快。
+> 💡 Discord 多 Bot 模式下，每个部门都是独立 Bot。你可以直接在 Discord 客户端选择真实 mention 下达指令，或让司礼监按预设 `<@UserId>` 模板派发；纯文本 `@兵部` 无效。复杂任务推荐走司礼监（自动内阁优化），简单任务直接 mention 对应部门更快。
 
 <details>
 <summary><b>查看完整机构表</b></summary>
@@ -151,7 +151,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/
 
 | 明朝 | 本项目 |
 |------|--------|
-| 皇帝下旨 → 司礼监批红 | 用户 @司礼监 → 接旨调度 |
+| 皇帝下旨 → 司礼监批红 | 用户真实 mention 司礼监 Bot → 接旨调度 |
 | 内阁票拟（起草方案） | 内阁 Prompt 增强 + Plan |
 | 司礼监代批（下发执行） | 用优化后 Prompt 派发六部 |
 | 都察院纠劾百官 | GitHub push 自动审查 |
@@ -169,18 +169,18 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/
 ### Discord 模式
 
 ```
-👑 皇帝：@司礼监 帮朕写个用户登录 API，再查一下这个月花了多少钱
+👑 皇帝：在 Discord 客户端真实 mention 司礼监 Bot，帮朕写个用户登录 API，再查一下这个月花了多少钱
 
 🏛️ 司礼监：遵旨！臣先请内阁优化任务……
-  → @内阁 请首辅审阅此旨，拟定执行计划。
+  → <@内阁BotUserId> 请首辅审阅此旨，拟定执行计划。
 
 📜 内阁：臣已拟票。
-  【任务一】@兵部 — 编写用户登录 REST API（Node.js + Express + JWT）
-  【任务二】@户部 — 本月 API 支出分析（分部门明细 + 优化建议）
+  【任务一】<@兵部BotUserId> — 编写用户登录 REST API（Node.js + Express + JWT）
+  【任务二】<@户部BotUserId> — 本月 API 支出分析（分部门明细 + 优化建议）
 
 🏛️ 司礼监：内阁拟票已收，开始派发！
-  → @兵部 …（优化后的完整 Prompt）
-  → @户部 …
+  → <@兵部BotUserId> …（优化后的完整 Prompt）
+  → <@户部BotUserId> …
 
 🏛️ 兵部：✅ 已提交 GitHub：wanikua/auth-api#1
 
@@ -323,7 +323,7 @@ BOLUO_AUTH_TOKEN=你的密码 node index.js
 1. [Notion Integrations](https://www.notion.so/profile/integrations) 创建集成，复制 Secret
 2. `mkdir -p ~/.config/notion && echo "ntn_xxx" > ~/.config/notion/api_key`
 3. 在 Notion 页面点 **··· → Connect to** 授权
-4. 在 Discord：`@司礼监 把今天的工作总结写到 Notion 日报里`
+4. 在 Discord 客户端真实 mention 司礼监 Bot，然后发送：`把今天的工作总结写到 Notion 日报里`
 
 </details>
 

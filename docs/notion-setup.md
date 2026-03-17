@@ -43,9 +43,9 @@ curl -s "https://api.notion.com/v1/users/me" \
 ## 使用示例
 
 ```
-@司礼监 把今天的工作总结写到 Notion 日报里
-@户部 创建一个新的财务数据库，字段包含日期、收入、支出、备注
-@礼部 把这周的社媒数据更新到 Notion 舆情表
+在 Discord 客户端真实 mention 司礼监 Bot，然后发送：把今天的工作总结写到 Notion 日报里
+在 Discord 客户端真实 mention 户部 Bot，然后发送：创建一个新的财务数据库，字段包含日期、收入、支出、备注
+在 Discord 客户端真实 mention 礼部 Bot，然后发送：把这周的社媒数据更新到 Notion 舆情表
 ```
 
 ## 数据库字段设计建议

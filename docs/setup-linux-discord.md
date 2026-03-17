@@ -43,6 +43,11 @@ nano ~/.openclaw/openclaw.json
 1. **LLM API Key** — 你的 LLM 服务商（Anthropic / OpenAI / DeepSeek 等）
 2. **Discord Bot Token** — 上一步获取的 Token
 
+另外还要做一件事：
+3. **确认司礼监 `identity.theme` 里的 `<@...>` mention 映射与你实际部署的各部门 Bot User ID 一致**
+
+> ⚠️ 如果这里的 mention 映射和你实际部署的 Bot 不一致，司礼监写出的消息会 @ 错对象或无法触发目标 Bot。具体见 [Discord Bot 创建与配置](./setup-discord.md#重要bot-互相-mention-的格式)。
+
 > 💡 起步可以只创建司礼监一个 Bot，后续再加其他部门。
 
 ## 5. 启动

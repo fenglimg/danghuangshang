@@ -49,7 +49,7 @@ sandbox mode 设成了 `all` 导致 Agent 跑在 Docker 容器里，文件系统
 > 详细说明见 [安全须知](./security.md)
 
 ### Q: 多人同时 @ 同一个 Agent 会冲突吗？
-不会。OpenClaw 为每个用户 × Agent 组合维护独立会话。多人同时 @兵部，各自的对话互不干扰。
+不会。OpenClaw 为每个用户 × Agent 组合维护独立会话。多人同时真实 mention 同一个部门 Bot，各自的对话互不干扰。
 
 ### Q: Agent 之间能互相调用吗？
 能。通过 `sessions_spawn` 产生子任务给其他 Agent，通过 `sessions_send` 发消息给其他 Agent 的会话。

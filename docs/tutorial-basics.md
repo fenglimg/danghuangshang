@@ -413,10 +413,10 @@ systemctl --user status openclaw-gateway
 在 Discord 的任意频道测试：
 
 ```
-@司礼监 你好，自我介绍一下
-@兵部 用 Python 写个 Hello World
-@户部 如何控制 AI API 成本
-@礼部 写条小红书文案，主题是 AI 工具推荐
+在 Discord 客户端真实 mention 司礼监 Bot，然后发送：你好，自我介绍一下
+在 Discord 客户端真实 mention 兵部 Bot，然后发送：用 Python 写个 Hello World
+在 Discord 客户端真实 mention 户部 Bot，然后发送：如何控制 AI API 成本
+在 Discord 客户端真实 mention 礼部 Bot，然后发送：写条小红书文案，主题是 AI 工具推荐
 ```
 
 > 📍 成功标志：每个 Bot 的回复风格不一样就对了！🎉

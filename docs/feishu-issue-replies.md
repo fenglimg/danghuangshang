@@ -47,7 +47,7 @@
 - **平台**：飞书（国内无需梯子，WebSocket 长连接不需要公网 IP）
 - **架构**：单 Bot（司礼监）作为入口，`sessions_spawn` 后台调度 9 个部门
 - **效果**：与 Discord 多 Bot 模式完全等价，只是调度方式不同
-  - Discord：司礼监在频道 @兵部 派活（公开可见）
+  - Discord：司礼监在频道用 `<@BotUserId>` 或真实 mention 派活（公开可见）
   - 飞书：司礼监用 sessions_spawn 后台派活（司礼监汇报结果）
 
 也支持纯 WebUI 模式（路径 E），完全不需要任何 Bot 平台。

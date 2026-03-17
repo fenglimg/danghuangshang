@@ -8,7 +8,7 @@
 
 ## 概述
 
-AI 朝廷的多 Bot 架构：**每个部门 = 一个独立的 Discord Bot**。@兵部就找兵部回复，@户部就找户部回复。
+AI 朝廷的多 Bot 架构：**每个部门 = 一个独立的 Discord Bot**。在 Discord 客户端里真实 mention 兵部 Bot，就由兵部回复；真实 mention 户部 Bot，就由户部回复。
 
 - 起步只需 **1 个 Bot**（司礼监），后续随时加
 - 完整版 **4-10 个 Bot**（六部 + 辅助机构）
@@ -48,7 +48,15 @@ AI 朝廷的多 Bot 架构：**每个部门 = 一个独立的 Discord Bot**。@�
 
 > 🔴 **Token 只显示一次！** 先复制到记事本保存。
 
-### 2.4 开启 Intent（⚠️ 必做！）
+### 2.4 记录 Bot User ID（给司礼监派活用）
+
+1. 在 Discord 客户端开启「开发者模式」：用户设置 → 高级 → 开发者模式
+2. 在服务器成员列表或聊天记录里右键这个 Bot
+3. 点击 **复制用户 ID**
+
+> 💡 **Application ID** 用来注册命令，**User ID** 用来做 `<@数字ID>` mention。两者不是一回事，Discord 多 Bot 派活需要两者都记录。
+
+### 2.5 开启 Intent（⚠️ 必做！）
 
 在同一 Bot 页面往下滚到 **Privileged Gateway Intents**：
 
@@ -60,7 +68,7 @@ AI 朝廷的多 Bot 架构：**每个部门 = 一个独立的 Discord Bot**。@�
 
 > ⚠️ **每个 Bot 都要开！** 不是只开一个！
 
-### 2.5 邀请 Bot 到服务器
+### 2.6 邀请 Bot 到服务器
 
 1. 左侧菜单 → **OAuth2**
 2. **Scopes** 勾选 `bot` + `applications.commands`（⚠️ 两个都要勾！不勾 `applications.commands` 斜杠命令无法使用）
@@ -181,6 +189,13 @@ journalctl --user -u openclaw-gateway --since "5 min ago"
 
 > 📖 更多排查见 [配置诊断](./doctor.md) 和 [完整 FAQ](./faq.md)
 
+## 排查：司礼监用 `message.send` 发公开派单时报 `Poll fields require action "poll"`？
+
+- 这是 OpenClaw `2026.3.13` 的已知兼容问题：`message.send` 路径里如果被工具模板自动带上空的 `poll*` 字段，运行时会把它误判成 poll 请求并拒绝发送。
+- AI 朝廷安装脚本会自动补一个热修：`action=send` 时无条件剔除 `poll*`，并同步清理空的 `components/modal`。
+- 如果你是老安装环境，重新运行一次 `install.sh`、`install-lite.sh` 或 `install-mac.sh` 即可把补丁补回当前 OpenClaw 安装目录。
+- 若重跑后仍报同样错误，先执行 `systemctl --user restart openclaw-gateway`，再重新测试。
+
 ---
 
 ← [返回 README](../README.md) | [进阶配置 →](./tutorial-advanced.md)
@@ -193,7 +208,7 @@ Discord 的 @mention 必须使用 `<@用户ID>` 格式，**纯文本 `@兵部` �
 
 ### 为什么需要关注这个？
 
-司礼监的 `identity.theme` 里写着"@对应部门派活"，但 LLM 不知道其他 Bot 的 Discord User ID，只会输出纯文本 `@兵部` — 这在 Discord 里只是普通字符串，不会生成蓝色 mention，其他 Bot 完全收不到。
+司礼监的 `identity.theme` 如果只写"@对应部门派活"，LLM 不知道其他 Bot 的 Discord User ID，只会输出纯文本 `@兵部` — 这在 Discord 里只是普通字符串，不会生成蓝色 mention，其他 Bot 完全收不到。
 
 ### 怎么获取 Bot 的 User ID？
 
@@ -203,7 +218,7 @@ Discord 的 @mention 必须使用 `<@用户ID>` 格式，**纯文本 `@兵部` �
 
 ### 怎么配置？
 
-在司礼监的 `identity.theme` 中写入每个 Bot 的 Discord User ID：
+把安装脚本/示例配置里司礼监 `identity.theme` 的 mention 映射改成每个 Bot 的真实 Discord User ID：
 
 ```
 【@mention 格式（最重要！）】
@@ -219,5 +234,5 @@ Discord 的 @mention 必须使用 `<@用户ID>` 格式，**纯文本 `@兵部` �
 错误示例: @兵部 编写用户登录 REST API（对方收不到！）
 ```
 
-> 💡 每个 Bot 的 User ID 在创建后就固定了，填一次即可。
-
+> 💡 本仓库当前已经预填了一套运行中的 Bot User ID；如果你复用的是同一批 Bot，可以直接用。若你部署的是另一套 Bot，就把这里的 mention 映射替换成你自己的 ID。
+> 💡 如果某部门的 User ID 还没填，司礼监不应该继续尝试 `message` 派活给这个部门；要么提醒补齐配置，要么让主公手动 @ 该部门。

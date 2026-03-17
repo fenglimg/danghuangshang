@@ -123,9 +123,9 @@ git remote add origin https://github.com/你的用户名/openclaw-backup.git
 ### 使用示例
 
 ```
-@兵部 把当前目录的改动提交到 GitHub，commit message 写"自动备份配置"
-@兵部 在 GitHub 仓库创建一个 Issue，标题是"优化日志系统"
-@兵部 为 dev 分支创建 PR 到 main 分支
+在 Discord 客户端真实 mention 兵部 Bot，然后发送：把当前目录的改动提交到 GitHub，commit message 写"自动备份配置"
+在 Discord 客户端真实 mention 兵部 Bot，然后发送：在 GitHub 仓库创建一个 Issue，标题是"优化日志系统"
+在 Discord 客户端真实 mention 兵部 Bot，然后发送：为 dev 分支创建 PR 到 main 分支
 ```
 
 ### 自动备份脚本
@@ -169,10 +169,10 @@ source ~/.bashrc
 ### 使用场景
 
 ```
-@司礼监 生成今天的日报，写入 Notion 日报数据库
-@司礼监 在 Notion 周报数据库创建本周周报
-@司礼监 更新 Notion 项目数据库，pindoudou 项目进度 65%
-@户部 在 Notion 财务数据库添加记录：API 费用 $2.5
+在 Discord 客户端真实 mention 司礼监 Bot，然后发送：生成今天的日报，写入 Notion 日报数据库
+在 Discord 客户端真实 mention 司礼监 Bot，然后发送：在 Notion 周报数据库创建本周周报
+在 Discord 客户端真实 mention 司礼监 Bot，然后发送：更新 Notion 项目数据库，pindoudou 项目进度 65%
+在 Discord 客户端真实 mention 户部 Bot，然后发送：在 Notion 财务数据库添加记录：API 费用 $2.5
 ```
 
 ---
