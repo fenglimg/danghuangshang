@@ -53,6 +53,7 @@
 | [OpenMOSS ADR-002](./openmoss/adr-002-installer-minimum-delivery-policy.md) | 安装器最小交付策略，明确 `state/openmoss` 不由 `install.sh` 预创建 |
 | [OpenMOSS 6-Wave 收官回归清单](./openmoss/6-wave-closeout-regression-checklist.md) | 六个 wave 收官时该做的自动化、API、GUI、数据面回归 |
 | [OpenMOSS 安装器评审准入评估](./openmoss/install-readiness-assessment.md) | 哪些条件已具备进入安装器评审，哪些仍未具备 |
+| [OpenMOSS Installer Implementation Entry](./openmoss/installer-implementation-entry.md) | 把未来任何脚本行为改动单独立项，锁定基线、允许范围和禁止项 |
 | [OpenMOSS Live Upgrade Rehearsal 2026-03-17](./openmoss/live-upgrade-rehearsal-2026-03-17.md) | 基于真实旧环境快照验证惰性创建、旧配置不破坏和 GUI 升级接入 |
 | [完整 FAQ](./faq.md) | 基础 + 技术常见问题 |
 | [飞书 Issue 回复](./feishu-issue-replies.md) | 飞书相关 GitHub Issue 汇总 |

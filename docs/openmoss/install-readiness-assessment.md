@@ -299,7 +299,7 @@
    - `doctor.sh` 首轮检查已落地
    - migration 文档已覆盖旧环境惰性接入
 3. installer policy 已由 ADR-002 冻结
-4. 下一步评估是否需要最小 install-path implementation
+4. 下一步如需继续推进，必须先进入独立的 [installer-implementation-entry.md](/root/danghuangshang-openmoss-exec/docs/openmoss/installer-implementation-entry.md)
 5. 只有完成基于 ADR-002 的 implementation / validation，才允许真正进入 `install.sh` 修改
 
 ---
@@ -312,3 +312,5 @@
 
 这正符合当前 SOP：  
 **先完成核心治理层收官，再进入交付评审，而不是让安装器替代验证。**
+
+如果后续真的要动脚本，应以 [installer-implementation-entry.md](/root/danghuangshang-openmoss-exec/docs/openmoss/installer-implementation-entry.md) 作为单独任务入口，而不是继续把实现混在本评审文档里。
