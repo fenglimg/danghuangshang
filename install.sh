@@ -24,7 +24,7 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-FORK_DOCTOR_RAW_URL="${FORK_DOCTOR_RAW_URL:-https://raw.githubusercontent.com/fenglimg/danghuangshang/integrate/local-host-install-openmoss/doctor.sh}"
+FORK_DOCTOR_RAW_URL="${FORK_DOCTOR_RAW_URL:-https://raw.githubusercontent.com/fenglimg/danghuangshang/local-host-install/doctor.sh}"
 
 apply_openclaw_subagent_streamto_hotfix() {
     local cli="${1:-openclaw}"

@@ -9,7 +9,7 @@
 遇到问题？跑一行命令自动检查：
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/fenglimg/danghuangshang/integrate/local-host-install-openmoss/doctor.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/fenglimg/danghuangshang/local-host-install/doctor.sh)
 ```
 
 如果你已经在当前 fork 的仓库目录里，优先使用：
