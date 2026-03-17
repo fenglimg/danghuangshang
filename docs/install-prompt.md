@@ -31,6 +31,8 @@
 - 如果用户已经在这台机器上跑过 OpenClaw 或 Docker 版 OpenClaw，**先备份 `~/.openclaw` 和 `~/clawd`**
 - 安装基线使用仓库里的 `install.sh`
 - 配置阶段优先保留 `install.sh` 生成的结构，只回填旧环境中的真实 provider / token / gateway 参数
+- 如果用户已经启用过 OpenMOSS 治理能力，要明确告诉用户：`~/.openclaw/state/openmoss/` 属于运行态治理数据，应跟随 `~/.openclaw` 一并备份
+- 如果旧环境还没有 `~/.openclaw/state/openmoss/`，不要为迁移手工创建空目录；它应在 GUI/API 首次使用治理能力时惰性创建
 - 如果当前 OpenClaw CLI 不接受某些模板字段（如 `applicationId`、`runTimeoutSeconds`、`subagents.maxConcurrent`），要明确告诉用户这是 **schema 兼容问题**，并改用 `openclaw doctor --fix`
 
 ## 第一步：收集信息
@@ -71,6 +73,11 @@ cp -a ~/.openclaw "$HOME/.openclaw.backup-host-install-$TS"
 cp -a ~/clawd "$HOME/clawd.backup-host-install-$TS"
 ```
 
+补充说明：
+
+- 如果旧环境已经出现 `~/.openclaw/state/openmoss/`，它会跟随 `~/.openclaw` 自动进入备份
+- 不要把 `state/openmoss` 单独迁到 `~/clawd`
+
 #### 2. 停掉 Docker 运行面
 ```bash
 docker stop openclaw
@@ -94,6 +101,11 @@ cd ~/danghuangshang
 bash ./install.sh
 ```
 
+告诉用户：
+
+- 当前 `install.sh` 不会预创建 `~/.openclaw/state/openmoss/`
+- 这不是安装缺失，而是当前治理层采用惰性初始化策略
+
 #### 5. 回填真实配置
 告诉用户不要整份覆盖旧配置，而是优先回填：
 
@@ -111,6 +123,13 @@ openclaw gateway health
 openclaw gateway status
 ```
 
+如果用户已经在旧环境中用过治理功能，再补一条只读确认：
+
+```bash
+bash ./doctor.sh
+ls -la ~/.openclaw/state/openmoss 2>/dev/null || true
+```
+
 ### 已有宿主机 OpenClaw
 
 如果用户已经在宿主机跑过 OpenClaw，也先走备份再重装的路径：
@@ -125,6 +144,11 @@ cd ~/danghuangshang
 bash ./install.sh
 ```
 然后再进入「填写配置」步骤。
+
+如果用户此前已经启用过治理页，也提醒：
+
+- `~/.openclaw/state/openmoss/` 仍然跟随 `~/.openclaw` 迁移
+- 如果老环境没有该目录，不要手工创建空目录
 
 ### 新用户安装
 
@@ -156,6 +180,7 @@ nano ~/.openclaw/openclaw.json
 - `install.sh` 生成的是**结构基线**
 - 如果这是迁移场景，应从备份里回填真实 provider / token / gateway 参数
 - 不要把旧的混合 runtime 配置原封不动覆盖回去
+- OpenMOSS 治理状态目录是运行态数据，不在这一步手工造目录；如需验证，优先跑 `doctor.sh`
 - 如果用户想先保留全量 Agent 架构、但暂时不绑定所有 Discord Bot：保留完整 `agents.list`，只填写已有 token 的 `accounts`，`bindings` 也只保留当前要启用的部门
 - 不要保留无意义的 `default` 账号占位；未准备好的部门先不写 `accounts` / `bindings`
 
@@ -310,6 +335,7 @@ openclaw gateway status
 如果没回复，运行诊断工具：
 ```bash
 openclaw doctor --fix
+bash ./doctor.sh
 ```
 
 ## 排错指南

@@ -657,9 +657,9 @@ try {
     fi
 fi
 
-# ---- [8/9] 检测工作区 ----
+# ---- [8/10] 检测工作区 ----
 echo ""
-echo -e "${YELLOW}[8/9] 检查工作区...${NC}"
+echo -e "${YELLOW}[8/10] 检查工作区...${NC}"
 
 WORKSPACE=$(json_get "$CONFIG_FILE" "agents.defaults.workspace" | sed "s|\$HOME|$HOME|;s|~|$HOME|")
 if [ -z "$WORKSPACE" ]; then
@@ -677,9 +677,50 @@ fi
 [ -f "$WORKSPACE/USER.md" ] && pass "USER.md ✓" || warn "USER.md 不存在 — Agent 不了解用户信息"
 [ -d "$WORKSPACE/memory" ] && pass "memory/ ✓" || warn "memory/ 目录不存在 — 运行: mkdir -p $WORKSPACE/memory"
 
-# ---- [9/9] 检测可选集成 ----
+# ---- [9/10] 检测 OpenMOSS 治理状态 ----
 echo ""
-echo -e "${YELLOW}[9/9] 检查可选集成与服务...${NC}"
+echo -e "${YELLOW}[9/10] 检查 OpenMOSS 治理状态...${NC}"
+
+OPENMOSS_STATE_DIR="$HOME/.openclaw/state/openmoss"
+OPENMOSS_SCHEMA_PATH="$OPENMOSS_STATE_DIR/meta/schema-version.json"
+
+if [ -d "$OPENMOSS_STATE_DIR" ]; then
+    pass "OpenMOSS state 目录存在: $OPENMOSS_STATE_DIR"
+
+    if [ -f "$OPENMOSS_SCHEMA_PATH" ]; then
+        OPENMOSS_SCHEMA_VERSION=$(json_get "$OPENMOSS_SCHEMA_PATH" "schemaVersion")
+        if [ -n "$OPENMOSS_SCHEMA_VERSION" ]; then
+            pass "OpenMOSS schemaVersion: $OPENMOSS_SCHEMA_VERSION"
+        else
+            fail "OpenMOSS schema-version.json 存在但无法解析 schemaVersion"
+        fi
+    else
+        fail "OpenMOSS state 已存在，但缺少 meta/schema-version.json"
+    fi
+
+    [ -d "$OPENMOSS_STATE_DIR/tasks" ] && pass "OpenMOSS tasks/ 目录存在" || warn "OpenMOSS tasks/ 目录缺失"
+    [ -d "$OPENMOSS_STATE_DIR/events" ] && pass "OpenMOSS events/ 目录存在" || warn "OpenMOSS events/ 目录缺失"
+    [ -d "$OPENMOSS_STATE_DIR/reviews" ] && pass "OpenMOSS reviews/ 目录存在" || warn "OpenMOSS reviews/ 目录缺失"
+    [ -d "$OPENMOSS_STATE_DIR/patrol-alerts" ] && pass "OpenMOSS patrol-alerts/ 目录存在" || warn "OpenMOSS patrol-alerts/ 目录缺失"
+
+    TASK_SNAPSHOT_COUNT=$(find "$OPENMOSS_STATE_DIR/tasks" -maxdepth 1 -type f -name '*.json' 2>/dev/null | wc -l | tr -d ' ')
+    EVENT_LOG_COUNT=$(find "$OPENMOSS_STATE_DIR/events" -maxdepth 1 -type f -name '*.jsonl' 2>/dev/null | wc -l | tr -d ' ')
+    REVIEW_LOG_COUNT=$(find "$OPENMOSS_STATE_DIR/reviews" -maxdepth 1 -type f -name '*.jsonl' 2>/dev/null | wc -l | tr -d ' ')
+    ALERT_LOG_COUNT=$(find "$OPENMOSS_STATE_DIR/patrol-alerts" -maxdepth 1 -type f -name '*.jsonl' 2>/dev/null | wc -l | tr -d ' ')
+
+    info "OpenMOSS 数据概览: tasks=${TASK_SNAPSHOT_COUNT:-0} events=${EVENT_LOG_COUNT:-0} reviews=${REVIEW_LOG_COUNT:-0} patrol-alerts=${ALERT_LOG_COUNT:-0}"
+
+    if [ "${TASK_SNAPSHOT_COUNT:-0}" -gt 0 ] && [ "${EVENT_LOG_COUNT:-0}" -eq 0 ]; then
+        warn "OpenMOSS 存在 task snapshots，但未发现 events 日志"
+    fi
+else
+    info "未检测到 OpenMOSS state（如果尚未进入治理页或尚未创建治理任务，这属于正常情况）"
+    info "OpenMOSS state 目录会在 GUI/API 首次使用时惰性创建，不建议先手工创建空目录"
+fi
+
+# ---- [10/10] 检测可选集成 ----
+echo ""
+echo -e "${YELLOW}[10/10] 检查可选集成与服务...${NC}"
 
 # Notion
 if [ -f "$HOME/.config/notion/api_key" ]; then

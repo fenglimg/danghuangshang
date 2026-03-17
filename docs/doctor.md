@@ -19,9 +19,27 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/
 - ✅ Discord Bot Token、allowBots、groupPolicy 检查
 - ✅ Agent 和 Binding 路由匹配检查
 - ✅ 工作区文件（SOUL.md / USER.md / memory/）检查
+- ✅ OpenMOSS 治理状态目录检查（`~/.openclaw/state/openmoss/`）
 - ✅ Notion 等可选集成检查
 - ✅ 飞书 appId / appSecret / 权限 / 事件订阅检查
 - ✅ **@everyone 不触发的完整排查清单**
+
+## OpenMOSS 状态检查
+
+从 installer review 第一波开始，`doctor.sh` 会额外检查：
+
+- `~/.openclaw/state/openmoss/` 是否存在
+- `meta/schema-version.json` 是否存在且可读
+- `tasks/`、`events/`、`reviews/`、`patrol-alerts/` 目录是否齐全
+- 当前 task / event / review / alert 文件数量概览
+
+这组检查目前是**只读诊断**，不会自动迁移、自动修复或强制创建目录。
+
+注意：
+
+- 如果你还没有进入 GUI 治理页、也没有创建过治理任务，那么 `state/openmoss` 不存在是正常现象
+- OpenMOSS state 目录应该在 GUI/API 首次使用时**惰性创建**
+- 不建议为了“让 doctor 通过”而手工预创建空目录
 
 ---
 

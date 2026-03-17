@@ -30,6 +30,7 @@
 3. **以 `install.sh` 生成的结构为基线**
 4. **只从旧配置回填真实运行必需值**：provider、API Key、现有 bot token、gateway token、现有 guild/channel 约束
 5. **不要把旧 runtime 的混合 patch 整包搬回来**
+6. **OpenMOSS 治理状态跟随 `~/.openclaw` 备份，但不要求预创建空目录**
 
 ---
 
@@ -49,6 +50,12 @@ cp -a ~/clawd "$HOME/clawd.backup-host-install-$TS"
 mv ~/.openclaw "$HOME/.openclaw.legacy-active-$TS"
 mv ~/clawd "$HOME/clawd.legacy-active-$TS"
 ```
+
+补充说明：
+
+- 如果当前环境已经出现 `~/.openclaw/state/openmoss/`，它会随 `cp -a ~/.openclaw ...` 一并进入备份
+- 如果当前环境**还没有** `state/openmoss`，这是正常的；不要为了迁移提前创建空目录
+- `state/openmoss` 属于运行态治理数据，不应单独迁到 `~/clawd`
 
 ---
 
@@ -94,6 +101,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/
 
 - `install.sh` 只会在 `~/.openclaw/openclaw.json` **不存在**时写入模板
 - 所以如果你想严格走模板初始化，必须先把旧 `~/.openclaw` 挪走
+- `install.sh` 当前**不会**预创建 `~/.openclaw/state/openmoss/`
+- OpenMOSS state 会在 GUI/API 首次使用治理能力时惰性创建
 
 ---
 
@@ -205,6 +214,23 @@ bash ./install.sh
 - `bindings` 只保留当前要暴露到 Discord 的部门
 
 注意不要保留无意义的占位账号（例如 `default`），否则后续排查时容易混淆“真实 bot”与“历史残留”。
+
+### 5. OpenMOSS 状态目录该怎么处理
+
+如果你已经吸收了 OpenMOSS 治理层，需要明确三条规则：
+
+1. `~/.openclaw/state/openmoss/` 跟随 `~/.openclaw` 一并备份和保留
+2. 老环境没有该目录时，不要手工补一个空目录来“模拟已迁移”
+3. 迁移完成后，优先运行 `doctor.sh` 做只读检查，再进入 GUI 治理页做首次写盘验证
+
+推荐检查：
+
+```bash
+bash ./doctor.sh
+ls -la ~/.openclaw/state/openmoss 2>/dev/null || true
+```
+
+如果目录尚不存在，但治理功能还没用过，这不算迁移失败。
 
 ---
 
