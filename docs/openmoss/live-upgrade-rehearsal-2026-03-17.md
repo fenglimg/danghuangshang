@@ -159,10 +159,14 @@ env BOLUO_AUTH_TOKEN=openmoss-rehearsal-token \
 
 但这还不等于可以直接改 `install.sh`。
 
-当前仍缺：
+到当前为止，`install.sh` 的最小交付策略已经由 [ADR-002](/root/danghuangshang-openmoss-exec/docs/openmoss/adr-002-installer-minimum-delivery-policy.md) 冻结。
 
-1. `install.sh` 的最小交付策略
-2. `doctor.sh` 是否需要从只读检查升级到有限修复能力
-3. 是否需要明确定义 schema migration policy
+当前剩下的，不再是“要不要先定 policy”，而是：
 
-在这三项没有收敛前，仍然不建议直接进入安装器实装。
+1. 是否真的存在证据证明需要进一步 installer implementation
+2. 如果需要，是否能在不越过 ADR-002 的前提下单独开任务执行
+3. 是否能基于单独脚本改动再做一轮 implementation 级验证
+
+因此，这份 rehearsal 的结论应被理解为：
+
+> **它证明了治理层接入和惰性创建路线可行，但任何新的脚本行为变更仍必须作为独立 installer implementation 任务推进。**
