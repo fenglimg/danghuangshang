@@ -312,34 +312,36 @@ Phase 1 的判断结果是：**必须修改 `install.sh`。**
 
 ### Gate 4. 是否已经适合作为长期分支候选回收
 
-结论：**有条件通过**
+结论：**通过**
 
-当前只有一个明确阻塞点：
+此前唯一的阻塞点是：
 
 - [install.sh](/root/danghuangshang-openmoss-installer-impl/install.sh#L27)
 - [docs/doctor.md](/root/danghuangshang-openmoss-installer-impl/docs/doctor.md#L12)
 - [README.md](/root/danghuangshang-openmoss-installer-impl/README.md#L91)
 - [README_EN.md](/root/danghuangshang-openmoss-installer-impl/README_EN.md#L36)
 
-这些入口当前都把远程 doctor 来源固定为：
+这些入口此前都把远程 doctor 来源固定为：
 
 ```text
 https://raw.githubusercontent.com/fenglimg/danghuangshang/integrate/local-host-install-openmoss/doctor.sh
 ```
 
-这对**当前 task 分支内的验证**是可接受的，因为：
+现在已收口为最终长期分支来源：
 
-- 本地仓库执行路径优先走 `bash ./doctor.sh`
-- 这条 raw URL 当前确实指向包含 OpenMOSS 检查的已发布分支
+```text
+https://raw.githubusercontent.com/fenglimg/danghuangshang/local-host-install/doctor.sh
+```
 
-但对**长期分支回收**来说，它还不够稳定，因为：
+这意味着：
 
-- `integrate/local-host-install-openmoss` 是集成分支，不是目标长期分支
-- 如果这批改动回收到 `local-host-install` 后仍保留这条 URL，就会把正式交付面绑到中间分支上
+- 本地仓库执行路径仍优先走 `bash ./doctor.sh`
+- 远程 fallback 已不再依赖中间集成分支
+- 当前这批改动已经满足“ready for long-branch recovery”的交付稳定性要求
 
-因此更精确的 gate verdict 是：
+因此当前 gate verdict 更新为：
 
-> **这批改动已经达到“可提交、可审查、可作为 installer implementation 第一批候选”的标准；但在真正回收到长期分支前，必须把远程 doctor URL 改写为最终长期分支的稳定来源。**
+> **这批改动已经达到“可提交、可审查、可作为 installer implementation 第一批候选、并可准备回收到长期分支”的标准。**
 
 ---
 
