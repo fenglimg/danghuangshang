@@ -54,6 +54,7 @@
 | [OpenMOSS 6-Wave 收官回归清单](./openmoss/6-wave-closeout-regression-checklist.md) | 六个 wave 收官时该做的自动化、API、GUI、数据面回归 |
 | [OpenMOSS 安装器评审准入评估](./openmoss/install-readiness-assessment.md) | 哪些条件已具备进入安装器评审，哪些仍未具备 |
 | [OpenMOSS Installer Implementation Entry](./openmoss/installer-implementation-entry.md) | 把未来任何脚本行为改动单独立项，锁定基线、允许范围和禁止项 |
+| [OpenMOSS Installer Implementation Phase-1 Checkpoint](./openmoss/installer-implementation-phase-1-checkpoint.md) | 固化远端分支、阶段提交点和回收前置条件 |
 | [OpenMOSS Installer Implementation Plan](./openmoss/installer-implementation-plan.md) | 本轮 installer implementation 的执行对象、阶段、禁止项和验收门 |
 | [OpenMOSS Installer Implementation Rehearsal 2026-03-17](./openmoss/installer-implementation-rehearsal-2026-03-17.md) | 验证 doctor 来源对齐后，惰性创建与旧配置不破坏仍成立 |
 | [OpenMOSS Live Upgrade Rehearsal 2026-03-17](./openmoss/live-upgrade-rehearsal-2026-03-17.md) | 基于真实旧环境快照验证惰性创建、旧配置不破坏和 GUI 升级接入 |
