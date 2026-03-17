@@ -50,6 +50,7 @@
 | [上游同步策略](./upstream-sync.md) | `upstream-main` / `local-host-install` 分支同步方式 |
 | [OpenMOSS 吸收开发流程 SOP](./openmoss-integration-sop.md) | 三阶段集成、分支边界、`install.sh` 准入规则 |
 | [OpenMOSS ADR-001](./openmoss/adr-001-absorption-boundary.md) | 吸收边界、角色映射、一期存储和 `install.sh` 冻结规则 |
+| [OpenMOSS ADR-002](./openmoss/adr-002-installer-minimum-delivery-policy.md) | 安装器最小交付策略，明确 `state/openmoss` 不由 `install.sh` 预创建 |
 | [OpenMOSS 6-Wave 收官回归清单](./openmoss/6-wave-closeout-regression-checklist.md) | 六个 wave 收官时该做的自动化、API、GUI、数据面回归 |
 | [OpenMOSS 安装器评审准入评估](./openmoss/install-readiness-assessment.md) | 哪些条件已具备进入安装器评审，哪些仍未具备 |
 | [OpenMOSS Live Upgrade Rehearsal 2026-03-17](./openmoss/live-upgrade-rehearsal-2026-03-17.md) | 基于真实旧环境快照验证惰性创建、旧配置不破坏和 GUI 升级接入 |
