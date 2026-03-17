@@ -1,6 +1,6 @@
 # OpenMOSS Installer Implementation Entry
 
-> Status: Ready When Explicitly Opened  
+> Status: Active  
 > Scope: 为任何未来的 OpenMOSS 安装器脚本改动提供单独任务入口，避免继续与 installer review 混做
 
 ← [返回文档索引](../README.md) | [返回安装器评审准入评估](./install-readiness-assessment.md) | [返回 ADR-002](./adr-002-installer-minimum-delivery-policy.md)
@@ -21,6 +21,10 @@
 > **把 `8809807` 视为 installer review 第一阶段完成点；如果后续真的要动脚本，必须单独开 `installer implementation` 任务，不再和 review 混做。**
 
 这份文档就是该单独任务的入口。
+
+当前执行计划：
+
+- [installer-implementation-plan.md](./installer-implementation-plan.md)
 
 ---
 
@@ -134,3 +138,5 @@ installer implementation 任务只有在以下条件同时成立时才算完成�
 一句话结论：
 
 > **现在可以规划 installer implementation，但只有在单独 worktree / 单独分支 / 单独任务中，才允许继续讨论任何新的脚本行为变更。**
+
+当前任务已经在独立分支中启动，后续执行以 [installer-implementation-plan.md](./installer-implementation-plan.md) 为准。

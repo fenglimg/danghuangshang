@@ -33,7 +33,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/
 
 **One command. 5 minutes. You are the Emperor.** [→ Quick Start](#quick-start-three-steps-to-the-throne)
 
-🏥 **Having issues?** `bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/doctor.sh)` — [Doctor Tool Docs](./docs/doctor.md)
+🏥 **Having issues?** `bash <(curl -fsSL https://raw.githubusercontent.com/fenglimg/danghuangshang/integrate/local-host-install-openmoss/doctor.sh)` — [Doctor Tool Docs](./docs/doctor.md)
 
 🤖 **Don't want to read docs?** Give [this Prompt](./docs/install-prompt.md) to your AI assistant (Claude / ChatGPT / DeepSeek) and let it guide you step by step.
 
