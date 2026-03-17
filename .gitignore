@@ -20,3 +20,5 @@ Thumbs.db
 frontend/
 gui/dist/
 SECURITY-AUDIT.md
+.workflow/.debug/
+*.bak.*

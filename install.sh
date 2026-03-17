@@ -64,6 +64,156 @@ EOF
     fi
 }
 
+apply_openclaw_message_send_sanitize_hotfix() {
+    local cli="${1:-openclaw}"
+    local version root dist matches file old_block new_block
+
+    if ! command -v "$cli" >/dev/null 2>&1; then
+        return 0
+    fi
+    if ! command -v perl >/dev/null 2>&1; then
+        echo -e "  ${YELLOW}⚠ 未检测到 perl，跳过 OpenClaw message send 兼容补丁${NC}"
+        return 0
+    fi
+
+    version=$("$cli" --version 2>/dev/null || echo "unknown")
+    root=$("$cli" status --json 2>/dev/null | node -e 'let data=""; process.stdin.on("data", (chunk) => data += chunk); process.stdin.on("end", () => { try { const root = JSON.parse(data)?.update?.root || ""; if (root) process.stdout.write(root); } catch (_) { process.exit(1); } });' 2>/dev/null || true)
+    dist="${root%/}/dist"
+    if [ -z "$root" ] || [ ! -d "$dist" ]; then
+        echo -e "  ${YELLOW}⚠ 未能定位 OpenClaw 安装目录，跳过 message send 兼容补丁${NC}"
+        return 0
+    fi
+
+    if grep -R -F -q 'const MESSAGE_SEND_SANITIZE_POLL_PARAM_NAMES = [' "$dist" 2>/dev/null; then
+        echo -e "  ${GREEN}✓ OpenClaw message send poll/components 兼容补丁已就绪${NC}"
+        return 0
+    fi
+
+    old_block='function normalizeMessageActionInput(params) {
+	const normalizedArgs = { ...params.args };
+	const { action, toolContext } = params;
+	const explicitTarget = typeof normalizedArgs.target === "string" ? normalizedArgs.target.trim() : "";
+	const hasLegacyTargetFields = typeof normalizedArgs.to === "string" || typeof normalizedArgs.channelId === "string";
+	const hasLegacyTarget = typeof normalizedArgs.to === "string" && normalizedArgs.to.trim().length > 0 || typeof normalizedArgs.channelId === "string" && normalizedArgs.channelId.trim().length > 0;
+	if (explicitTarget && hasLegacyTargetFields) {
+		delete normalizedArgs.to;
+		delete normalizedArgs.channelId;
+	}
+	if (!explicitTarget && !hasLegacyTarget && actionRequiresTarget(action) && !actionHasTarget(action, normalizedArgs)) {
+		const inferredTarget = toolContext?.currentChannelId?.trim();
+		if (inferredTarget) normalizedArgs.target = inferredTarget;
+	}
+	if (!explicitTarget && actionRequiresTarget(action) && hasLegacyTarget) {
+		const legacyTo = typeof normalizedArgs.to === "string" ? normalizedArgs.to.trim() : "";
+		const legacyChannelId = typeof normalizedArgs.channelId === "string" ? normalizedArgs.channelId.trim() : "";
+		const legacyTarget = legacyTo || legacyChannelId;
+		if (legacyTarget) {
+			normalizedArgs.target = legacyTarget;
+			delete normalizedArgs.to;
+			delete normalizedArgs.channelId;
+		}
+	}
+	if (!(typeof normalizedArgs.channel === "string" ? normalizedArgs.channel.trim() : "")) {
+		const inferredChannel = normalizeMessageChannel(toolContext?.currentChannelProvider);
+		if (inferredChannel && isDeliverableMessageChannel(inferredChannel)) normalizedArgs.channel = inferredChannel;
+	}
+	applyTargetToParams({
+		action,
+		args: normalizedArgs
+	});
+	if (actionRequiresTarget(action) && !actionHasTarget(action, normalizedArgs)) throw new Error(`Action ${action} requires a target.`);
+	return normalizedArgs;
+}'
+    new_block='const MESSAGE_SEND_SANITIZE_POLL_PARAM_NAMES = [
+	"pollId",
+	"pollOptionId",
+	"pollOptionIds",
+	"pollOptionIndex",
+	"pollOptionIndexes",
+	...POLL_CREATION_PARAM_NAMES
+];
+function deleteMessageParamAliases(params, key) {
+	delete params[key];
+	const snakeKey = toSnakeCaseKey(key);
+	if (snakeKey !== key) delete params[snakeKey];
+}
+function sanitizeSendActionParams(params) {
+	for (const key of MESSAGE_SEND_SANITIZE_POLL_PARAM_NAMES) deleteMessageParamAliases(params, key);
+	if (!params.components || typeof params.components !== "object" || Array.isArray(params.components)) return;
+	const components = params.components;
+	if (Array.isArray(components.blocks) && components.blocks.length === 0) delete components.blocks;
+	if (typeof components.text === "string" && components.text.trim().length === 0) delete components.text;
+	if (components.container && typeof components.container === "object" && !Array.isArray(components.container)) {
+		const container = components.container;
+		if (typeof container.accentColor === "string" && container.accentColor.trim().length === 0) delete container.accentColor;
+		if (container.spoiler === false) delete container.spoiler;
+		if (Object.keys(container).length === 0) delete components.container;
+	}
+	const hasMeaningfulNonModalContent = Array.isArray(components.blocks) && components.blocks.length > 0 || typeof components.text === "string" && components.text.trim().length > 0 || !!(components.container && typeof components.container === "object" && !Array.isArray(components.container) && Object.keys(components.container).length > 0);
+	if (components.modal && typeof components.modal === "object" && !Array.isArray(components.modal)) {
+		const modal = components.modal;
+		const hasValidModalFields = Array.isArray(modal.fields) && modal.fields.some((entry) => !!entry && typeof entry === "object" && !Array.isArray(entry) && (entry.type === "text" || entry.type === "checkbox" || entry.type === "radio" || entry.type === "select" || entry.type === "role-select" || entry.type === "user-select"));
+		if (!hasMeaningfulNonModalContent || !hasValidModalFields) delete components.modal;
+	}
+	if (components.reusable === false) delete components.reusable;
+	if (Object.keys(components).length === 0 || !("blocks" in components) && !("text" in components) && !("container" in components) && !("modal" in components)) delete params.components;
+}
+function normalizeMessageActionInput(params) {
+	const normalizedArgs = { ...params.args };
+	const { action, toolContext } = params;
+	const explicitTarget = typeof normalizedArgs.target === "string" ? normalizedArgs.target.trim() : "";
+	const hasLegacyTargetFields = typeof normalizedArgs.to === "string" || typeof normalizedArgs.channelId === "string";
+	const hasLegacyTarget = typeof normalizedArgs.to === "string" && normalizedArgs.to.trim().length > 0 || typeof normalizedArgs.channelId === "string" && normalizedArgs.channelId.trim().length > 0;
+	if (explicitTarget && hasLegacyTargetFields) {
+		delete normalizedArgs.to;
+		delete normalizedArgs.channelId;
+	}
+	if (!explicitTarget && !hasLegacyTarget && actionRequiresTarget(action) && !actionHasTarget(action, normalizedArgs)) {
+		const inferredTarget = toolContext?.currentChannelId?.trim();
+		if (inferredTarget) normalizedArgs.target = inferredTarget;
+	}
+	if (!explicitTarget && actionRequiresTarget(action) && hasLegacyTarget) {
+		const legacyTo = typeof normalizedArgs.to === "string" ? normalizedArgs.to.trim() : "";
+		const legacyChannelId = typeof normalizedArgs.channelId === "string" ? normalizedArgs.channelId.trim() : "";
+		const legacyTarget = legacyTo || legacyChannelId;
+		if (legacyTarget) {
+			normalizedArgs.target = legacyTarget;
+			delete normalizedArgs.to;
+			delete normalizedArgs.channelId;
+		}
+	}
+	if (!(typeof normalizedArgs.channel === "string" ? normalizedArgs.channel.trim() : "")) {
+		const inferredChannel = normalizeMessageChannel(toolContext?.currentChannelProvider);
+		if (inferredChannel && isDeliverableMessageChannel(inferredChannel)) normalizedArgs.channel = inferredChannel;
+	}
+	if (action === "send") sanitizeSendActionParams(normalizedArgs);
+	applyTargetToParams({
+		action,
+		args: normalizedArgs
+	});
+	if (actionRequiresTarget(action) && !actionHasTarget(action, normalizedArgs)) throw new Error(`Action ${action} requires a target.`);
+	return normalizedArgs;
+}'
+    matches=$(grep -R -F -l "$old_block" "$dist" 2>/dev/null || true)
+    if [ -z "$matches" ]; then
+        echo -e "  ${YELLOW}⚠ 未找到可替换的 message send 兼容补丁入口，请手动检查 $dist${NC}"
+        return 0
+    fi
+
+    while IFS= read -r file; do
+        [ -n "$file" ] || continue
+        OLD_BLOCK="$old_block" NEW_BLOCK="$new_block" perl -0pi -e 's/\Q$ENV{OLD_BLOCK}\E/$ENV{NEW_BLOCK}/g' "$file"
+    done <<EOF
+$matches
+EOF
+
+    if grep -R -F -q "$old_block" "$dist" 2>/dev/null; then
+        echo -e "  ${YELLOW}⚠ OpenClaw $version 的 message send poll/components 兼容补丁未完全应用，请手动检查 $dist${NC}"
+    else
+        echo -e "  ${GREEN}✓ 已应用 OpenClaw $version 的 message send poll/components 兼容补丁${NC}"
+    fi
+}
+
 # ---- 系统检测 ----
 detect_os() {
     if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -391,6 +541,7 @@ else
     _npm_install_global
 fi
 apply_openclaw_subagent_streamto_hotfix openclaw
+apply_openclaw_message_send_sanitize_hotfix openclaw
 echo -e "  ${GREEN}✓ OpenClaw $(openclaw --version 2>/dev/null) 安装完成${NC}"
 
 # ---- 8. 初始化工作区 ----
@@ -765,7 +916,7 @@ cat > "$CONFIG_DIR/$CONFIG_FILE_NAME" << CONFIG_EOF
         "id": "silijian",
         "name": "司礼监",
         "model": { "primary": "your-provider/fast-model" },
-        "identity": { "theme": "你是AI朝廷的司礼监大内总管。你的职责是【规划调度】，不是亲自执行。说话简练干脆。\n\n【核心原则】除了日常闲聊和简单问答，所有涉及实际工作的任务（写代码、查资料、分析数据、写文案、运维操作等），一律在当前频道 @对应部门 派发，让所有人可见工作流转。你是指挥官，不是搬砖工。\n\n【部门职责】内阁=战略决策、都察院=审查监察、兵部=编码开发、户部=财务分析、礼部=品牌营销、工部=运维部署、吏部=项目管理、刑部=法务合规、翰林院=研究文档。\n\n【派活方式】用 message 工具在当前 Discord 频道发消息，@对应部门bot 下达任务。派活时用高级 Prompt 模板：【角色】+【任务】+【背景】+【要求】+【格式】，确保一次性给出所有约束。禁止用 sessions_spawn 暗地里干活，一切工作流转必须在频道内公开可见。\n\n【审批流程】涉及代码提交 → @都察院 审查；涉及重大决策（预算、架构、方向变更）→ @内阁 审议。都察院审查不通过则打回修改，内阁有否决权。\n\n【什么时候自己回答】仅限：纯闲聊、确认信息、汇报进度、问澄清问题。其他一律派活。" },
+        "identity": { "theme": "你是AI朝廷的司礼监大内总管。你的职责是【规划调度】，不是亲自执行。说话简练干脆。\n\n【核心原则】除了日常闲聊和简单问答，所有涉及实际工作的任务（写代码、查资料、分析数据、写文案、运维操作等），一律在当前频道派发，让所有人可见工作流转。你是指挥官，不是搬砖工。\n\n【部门职责】内阁=战略决策、都察院=审查监察、兵部=编码开发、户部=财务分析、礼部=品牌营销、工部=运维部署、吏部=项目管理、刑部=法务合规、翰林院=研究文档。\n\n【Discord 派活规则】在 Discord 中，只有 <@数字ID> 才是有效 mention，纯文本 @兵部 无效。你必须使用下面这组真实 mention 映射派活：\n- 司礼监 = <@1481152336561705022>\n- 内阁 = <@1482962981611638875>\n- 都察院 = <@1482382046948098168>\n- 兵部 = <@1482383838008315984>\n- 户部 = <@1482963632873803927>\n- 礼部 = <@1482964553255096360>\n- 工部 = <@1482382542350061688>\n- 吏部 = <@1482343215054192823>\n- 刑部 = <@1482965347899281539>\n- 翰林院·掌院学士 = <@1482383187425361920>\n- 翰林院·修撰 = <@1482965827832774818>\n- 翰林院·编修 = <@1482966215604310148>\n- 翰林院·检讨 = <@1482966778329038929>\n- 翰林院·庶吉士 = <@1482967259386347600>\n若任务只写“翰林院”，默认先派给翰林院·掌院学士，再由其决定是否细分到修撰/编修/检讨/庶吉士。\n\n【派活方式】用 message 工具在当前 Discord 频道发消息时，必须直接使用上面对应的 <@数字ID> mention 模板，禁止输出纯文本 @部门名。派活时用高级 Prompt 模板：【角色】+【任务】+【背景】+【要求】+【格式】，确保一次性给出所有约束。禁止用 sessions_spawn 暗地里干活，一切工作流转必须在频道内公开可见。\n\n【审批流程】涉及代码提交 → 使用都察院对应的 <@数字ID> 发起审查；涉及重大决策（预算、架构、方向变更）→ 使用内阁对应的 <@数字ID> 发起审议。都察院审查不通过则打回修改，内阁有否决权。\n\n【什么时候自己回答】仅限：纯闲聊、确认信息、汇报进度、问澄清问题。其他一律派活。" },
         "sandbox": { "mode": "off" },
         "subagents": {
           "allowAgents": ["neige", "duchayuan", "bingbu", "hubu", "libu", "gongbu", "libu2", "xingbu", "hanlin_zhang"],
@@ -1256,3 +1407,12 @@ else
     echo -e "${CYAN}跳过自检（可手动运行 bash doctor.sh）${NC}"
 fi
 echo ""
+
+# Optional hotfix for OpenClaw message(action=send) poll false-positive / empty components.
+# Disabled by default.
+if [ "${DANGHUANGSHANG_OPENCLAW_HOTFIX_MESSAGE_SEND:-}" = "1" ]; then
+  echo "[danghuangshang] applying optional OpenClaw hotfix: message.send";
+  "$(dirname "$0")/scripts/openclaw-hotfix-message-send.sh" || {
+    echo "[danghuangshang][WARN] OpenClaw hotfix failed (continuing).";
+  }
+fi
