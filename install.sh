@@ -214,6 +214,8 @@ EOF
     else
         echo -e "  ${GREEN}✓ 已应用 OpenClaw $version 的 message send poll/components 兼容补丁${NC}"
     fi
+}
+
 resolve_doctor_script_path() {
     local candidate
 
