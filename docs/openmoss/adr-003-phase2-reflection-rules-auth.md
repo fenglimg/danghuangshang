@@ -31,7 +31,7 @@
 
 ## Context
 
-根据 [absorption-matrix.md](/root/danghuangshang/docs/openmoss/absorption-matrix.md)，当前仓库已经完成：
+根据 [absorption-matrix.md](./absorption-matrix.md)，当前仓库已经完成：
 
 - task core
 - activity log / timeline

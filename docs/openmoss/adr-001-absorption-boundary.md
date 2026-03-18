@@ -287,6 +287,6 @@ Wave 2 必须遵守以下冻结点：
 ## Related Documents
 
 - [OpenMOSS 吸收开发流程 SOP](../openmoss-integration-sop.md)
-- [OpenMOSS 吸收路线图](/root/danghuangshang-openmoss-exec/.workflow/.roadmap/RMAP-openmoss-absorption-2026-03-16/roadmap.md)
-- [OpenMOSS 吸收优先级分析](/root/danghuangshang-openmoss-exec/.workflow/.analysis/ANL-openmoss-danghuangshang-compare-2026-03-16/absorption-priorities.md)
-- [OpenMOSS 覆盖矩阵](/root/danghuangshang-openmoss-exec/.workflow/.analysis/ANL-openmoss-danghuangshang-compare-2026-03-16/openmoss-coverage-matrix.md)
+- [OpenMOSS 吸收矩阵](./absorption-matrix.md)
+- [OpenMOSS 安装器评审准入评估](./install-readiness-assessment.md)
+- [ADR-003: Phase-2 Scope](./adr-003-phase2-reflection-rules-auth.md)

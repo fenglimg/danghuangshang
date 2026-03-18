@@ -29,6 +29,8 @@ AI 朝廷提供三层 GUI：**Web Dashboard** 看系统状态 → **Discord** �
 - **Token 统计**：按部门、按日期的 Token 消耗分析
 - **系统健康**：CPU/内存/磁盘监控、Gateway 状态
 
+> 📖 每个页面分别做什么，见 [GUI 页面总览](./gui-pages.md)
+
 ### 启动方式
 
 ```bash

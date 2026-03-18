@@ -56,13 +56,13 @@
 以下项必须全部为 `PASS`，否则不进入更高层回归。
 
 - [ ] ADR 仍然明确规定 `Wave 1-3` 不改 `install.sh`
-  - 证据: [adr-001-absorption-boundary.md](/root/danghuangshang-openmoss-exec/docs/openmoss/adr-001-absorption-boundary.md)
+  - 证据: [adr-001-absorption-boundary.md](./adr-001-absorption-boundary.md)
 - [ ] OpenMOSS 存储路径仍固定为 `~/.openclaw/state/openmoss/`
-  - 证据: [storage.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/task-core/storage.js)
+  - 证据: [storage.js](../../gui/server/openmoss/task-core/storage.js)
 - [ ] 组织语义层与系统职责层没有重新耦合
-  - 证据: [adr-001-absorption-boundary.md](/root/danghuangshang-openmoss-exec/docs/openmoss/adr-001-absorption-boundary.md)
+  - 证据: [adr-001-absorption-boundary.md](./adr-001-absorption-boundary.md)
 - [ ] 当前 active scope 没有混入 rules / prompt / notification / scoring
-  - 证据: [tasks.csv](/root/danghuangshang-openmoss-exec/.workflow/.csv-wave/cwp-openmoss-absorption-20260316/tasks.csv)
+  - 证据: [adr-001-absorption-boundary.md](./adr-001-absorption-boundary.md), [absorption-matrix.md](./absorption-matrix.md)
 
 ---
 
@@ -73,30 +73,30 @@
 执行：
 
 ```bash
-cd /root/danghuangshang-openmoss-exec/gui/server
+cd /root/danghuangshang/gui/server
 npm run test:openmoss
-node --check /root/danghuangshang-openmoss-exec/gui/server/index.js
+node --check /root/danghuangshang/gui/server/index.js
 ```
 
 验收：
 
 - [ ] `task-core` 测试通过
-  - 证据文件: [task-core.test.js](/root/danghuangshang-openmoss-exec/tests/openmoss/task-core/task-core.test.js)
+  - 证据文件: [task-core.test.js](../../tests/openmoss/task-core/task-core.test.js)
 - [ ] `activity-log` 测试通过
-  - 证据文件: [activity-log.test.js](/root/danghuangshang-openmoss-exec/tests/openmoss/activity-log/activity-log.test.js)
+  - 证据文件: [activity-log.test.js](../../tests/openmoss/activity-log/activity-log.test.js)
 - [ ] `review` 测试通过
-  - 证据文件: [review.test.js](/root/danghuangshang-openmoss-exec/tests/openmoss/review/review.test.js)
+  - 证据文件: [review.test.js](../../tests/openmoss/review/review.test.js)
 - [ ] `patrol` 测试通过
-  - 证据 file: [patrol.test.js](/root/danghuangshang-openmoss-exec/tests/openmoss/patrol/patrol.test.js)
+  - 证据 file: [patrol.test.js](../../tests/openmoss/patrol/patrol.test.js)
 - [ ] `gui/server/index.js` 语法检查通过
-  - 证据 file: [index.js](/root/danghuangshang-openmoss-exec/gui/server/index.js)
+  - 证据 file: [index.js](../../gui/server/index.js)
 
 ### 前端治理面
 
 执行：
 
 ```bash
-cd /root/danghuangshang-openmoss-exec/gui
+cd /root/danghuangshang/gui
 npx eslint gui/src/pages/Governance.tsx gui/src/App.tsx gui/src/types.ts
 npm run build
 ```
@@ -104,9 +104,9 @@ npm run build
 验收：
 
 - [ ] 新增治理页 lint 通过
-  - 证据 file: [Governance.tsx](/root/danghuangshang-openmoss-exec/gui/src/pages/Governance.tsx)
+  - 证据 file: [Governance.tsx](../../gui/src/pages/Governance.tsx)
 - [ ] GUI 构建通过
-  - 证据文件: [App.tsx](/root/danghuangshang-openmoss-exec/gui/src/App.tsx), [Governance.tsx](/root/danghuangshang-openmoss-exec/gui/src/pages/Governance.tsx)
+  - 证据文件: [App.tsx](../../gui/src/App.tsx), [Governance.tsx](../../gui/src/pages/Governance.tsx)
 
 说明：
 
@@ -134,9 +134,9 @@ npm run build
 
 证据代码：
 
-- [service.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/activity-log/service.js)
-- [review service.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/review/service.js)
-- [index.js](/root/danghuangshang-openmoss-exec/gui/server/index.js)
+- [service.js](../../gui/server/openmoss/activity-log/service.js)
+- [review service.js](../../gui/server/openmoss/review/service.js)
+- [index.js](../../gui/server/index.js)
 
 ### 打回返工链路
 
@@ -183,7 +183,7 @@ npm run build
 
 ## L3: GUI 闭环回归
 
-在 [`Governance.tsx`](/root/danghuangshang-openmoss-exec/gui/src/pages/Governance.tsx) 上验证：
+在 [`Governance.tsx`](../../gui/src/pages/Governance.tsx) 上验证：
 
 - [ ] 任务流列表与 `/api/openmoss/tasks` 返回一致
 - [ ] 状态筛选有效

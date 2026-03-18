@@ -63,10 +63,14 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/
 ## 目录
 
 - 🚀 [**快速开始**](#快速开始) — 3 步安装
+- 🧭 [**功能总览**](./docs/features.md) — 全部能力、入口模式、GUI、OpenMOSS 所在位置
+- 🧩 [**功能矩阵**](./docs/feature-matrix.md) — 特性、入口、前置、证据、测试项总表
 - 🏛️ [朝廷架构](#朝廷架构) — 明朝内阁制：皇帝→司礼监→内阁→六部→都察院
 - 🎬 [效果展示](#效果展示) — Discord / 飞书 对话示例
 - 📝 [翰林院](#翰林院) — 5 Agent 协作写小说（可选）
 - ⚙️ [核心能力](#核心能力) — 协作、记忆、60+ Skill、Cron、沙箱
+- 🎮 [玩法模式](./docs/usage-modes.md) — 司礼监调度、Discord 多 Bot、飞书单 Bot、纯 WebUI、GUI 管理后台
+- 🧪 [手测清单](./docs/testing-checklist.md) — 按 P0/P1/P2 逐项验证是否生效
 - 🆚 [为什么选这套方案？](#为什么选这套方案) — 与 ChatGPT / AutoGPT / CrewAI 对比
 - 📦 [更多](#更多) — GUI · 飞书 · Notion · 诊断 · FAQ · 企业版 · 菠萝王朝
 
@@ -95,6 +99,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/
 > 已有 OpenClaw？用精简版：`bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/install-lite.sh)`
 >
 > 正在从 Docker / 历史 `.openclaw` 迁移到宿主机直装？先看 [宿主机直装迁移指南](./docs/host-install-migration.md)
+>
+> 📚 想先看清楚全部能力和玩法？先看 [功能总览](./docs/features.md)、[玩法模式](./docs/usage-modes.md)、[功能矩阵](./docs/feature-matrix.md) 和 [手测清单](./docs/testing-checklist.md)
 
 ---
 
@@ -292,6 +298,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/
 
 功能：仪表盘 · 朝堂对话 · 会话管理 · Cron 可视化 · Token 统计 · 系统健康监控
 
+> 📖 完整页面说明见 [GUI 页面总览](./docs/gui-pages.md)
+
 ```bash
 cd danghuangshang/gui && npm install && npm run build
 cd server && npm install
@@ -314,6 +322,22 @@ BOLUO_AUTH_TOKEN=你的密码 node index.js
 4. `openclaw gateway restart`，在飞书 @机器人 测试
 
 > 飞书用 WebSocket，**不需要公网 IP**。详见 [docs.openclaw.ai/channels/feishu](https://docs.openclaw.ai/channels/feishu)
+
+</details>
+
+<details>
+<summary><h2>🎮 玩法模式</h2></summary>
+
+项目当前推荐的玩法入口：
+
+- **司礼监调度模式**：适合复杂任务，自动走内阁优化与六部分工
+- **Discord 多 Bot 模式**：适合直接指挥具体部门
+- **飞书单 Bot 模式**：适合国内用户，只维护一个入口 Bot
+- **纯 WebUI 模式**：适合快速试用，不配置任何 Bot
+- **GUI 管理后台模式**：适合看状态、看会话、做治理动作
+- **翰林院模式**：适合小说、长文、世界观创作
+
+详细见 [玩法模式](./docs/usage-modes.md)。
 
 </details>
 

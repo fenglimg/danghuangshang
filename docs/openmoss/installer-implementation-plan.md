@@ -3,7 +3,7 @@
 > Status: Active  
 > Date: 2026-03-17  
 > Branch: `task/openmoss-installer-implementation`  
-> Worktree: `/root/danghuangshang-openmoss-installer-impl`
+> Worktree: dedicated installer-implementation worktree
 
 ← [返回文档索引](../README.md) | [返回 Installer Entry](./installer-implementation-entry.md) | [返回 ADR-002](./adr-002-installer-minimum-delivery-policy.md)
 
@@ -21,13 +21,13 @@
 
 这次 implementation 不是为了扩大 scope，而是为了处理一个已经出现的交付面一致性问题：
 
-1. [install.sh](/root/danghuangshang-openmoss-installer-impl/install.sh#L1259) 会在安装结束后下载并运行远端 `doctor.sh`
-2. [install.sh](/root/danghuangshang-openmoss-installer-impl/install.sh#L1261) 当前下载地址仍指向 `wanikua/danghuangshang/main`
-3. [docs/doctor.md](/root/danghuangshang-openmoss-installer-impl/docs/doctor.md#L12) 的一键命令也仍指向 `wanikua/danghuangshang/main/doctor.sh`
-4. 但当前 fork 已经在本仓库的 [doctor.sh](/root/danghuangshang-openmoss-installer-impl/doctor.sh#L680) 中加入 OpenMOSS 状态检查
+1. [install.sh](../../install.sh#L1259) 会在安装结束后下载并运行远端 `doctor.sh`
+2. [install.sh](../../install.sh#L1261) 当前下载地址仍指向 `wanikua/danghuangshang/main`
+3. [docs/doctor.md](../doctor.md#L12) 的一键命令也仍指向 `wanikua/danghuangshang/main/doctor.sh`
+4. 但当前 fork 已经在本仓库的 [doctor.sh](../../doctor.sh#L680) 中加入 OpenMOSS 状态检查
 5. migration / install prompt 文档已经开始依赖这些 OpenMOSS 检查结论：
-   - [host-install-migration.md](/root/danghuangshang-openmoss-installer-impl/docs/host-install-migration.md#L224)
-   - [install-prompt.md](/root/danghuangshang-openmoss-installer-impl/docs/install-prompt.md#L129)
+   - [host-install-migration.md](../host-install-migration.md#L224)
+   - [install-prompt.md](../install-prompt.md#L129)
 
 因此，当前最需要解决的不是“要不要预创建 `state/openmoss`”，而是：
 
@@ -103,24 +103,24 @@
 
 当前会把用户导向 `doctor.sh` 的入口共有五类：
 
-1. [install.sh](/root/danghuangshang-openmoss-installer-impl/install.sh#L1255)
+1. [install.sh](../../install.sh#L1255)
    - 安装结束后自动下载并执行 `doctor.sh`
    - 当前下载源：`https://raw.githubusercontent.com/wanikua/danghuangshang/main/doctor.sh`
-2. [docs/doctor.md](/root/danghuangshang-openmoss-installer-impl/docs/doctor.md#L12)
+2. [docs/doctor.md](../doctor.md#L12)
    - 一键命令仍指向 upstream raw `doctor.sh`
-3. [README.md](/root/danghuangshang-openmoss-installer-impl/README.md#L91)
+3. [README.md](../../README.md#L91)
    - 首页快捷诊断命令仍指向 upstream raw `doctor.sh`
-4. [README_EN.md](/root/danghuangshang-openmoss-installer-impl/README_EN.md#L36)
+4. [README_EN.md](../../README_EN.md#L36)
    - 英文首页快捷诊断命令仍指向 upstream raw `doctor.sh`
 5. 本仓库内的本地执行路径
    - `bash ./doctor.sh`
    - migration / install prompt 文档已开始默认依赖这一路径：
-     - [host-install-migration.md](/root/danghuangshang-openmoss-installer-impl/docs/host-install-migration.md#L224)
-     - [install-prompt.md](/root/danghuangshang-openmoss-installer-impl/docs/install-prompt.md#L129)
+     - [host-install-migration.md](../host-install-migration.md#L224)
+     - [install-prompt.md](../install-prompt.md#L129)
 
 ### fork 与 upstream 的实际差异
 
-当前 fork 的 [doctor.sh](/root/danghuangshang-openmoss-installer-impl/doctor.sh#L680) 已增加：
+当前 fork 的 [doctor.sh](../../doctor.sh#L680) 已增加：
 
 - OpenMOSS state 目录存在性检查
 - `meta/schema-version.json` 读取
@@ -167,9 +167,9 @@ Phase 1 的判断结果是：**必须修改 `install.sh`。**
 
 根据本次 audit，后续最小对齐不应只改 `install.sh`，还至少应一起检查：
 
-1. [docs/doctor.md](/root/danghuangshang-openmoss-installer-impl/docs/doctor.md)
-2. [README.md](/root/danghuangshang-openmoss-installer-impl/README.md)
-3. [README_EN.md](/root/danghuangshang-openmoss-installer-impl/README_EN.md)
+1. [docs/doctor.md](../doctor.md)
+2. [README.md](../../README.md)
+3. [README_EN.md](../../README_EN.md)
 
 原因很简单：
 
@@ -190,11 +190,11 @@ Phase 1 的判断结果是：**必须修改 `install.sh`。**
 
 检查范围：
 
-- [install.sh](/root/danghuangshang-openmoss-installer-impl/install.sh)
-- [doctor.sh](/root/danghuangshang-openmoss-installer-impl/doctor.sh)
-- [docs/doctor.md](/root/danghuangshang-openmoss-installer-impl/docs/doctor.md)
-- [docs/host-install-migration.md](/root/danghuangshang-openmoss-installer-impl/docs/host-install-migration.md)
-- [docs/install-prompt.md](/root/danghuangshang-openmoss-installer-impl/docs/install-prompt.md)
+- [install.sh](../../install.sh)
+- [doctor.sh](../../doctor.sh)
+- [docs/doctor.md](../doctor.md)
+- [docs/host-install-migration.md](../host-install-migration.md)
+- [docs/install-prompt.md](../install-prompt.md)
 
 验收标准：
 
@@ -270,10 +270,10 @@ Phase 1 的判断结果是：**必须修改 `install.sh`。**
 
 当前改动范围只包含：
 
-- [install.sh](/root/danghuangshang-openmoss-installer-impl/install.sh)
-- [docs/doctor.md](/root/danghuangshang-openmoss-installer-impl/docs/doctor.md)
-- [README.md](/root/danghuangshang-openmoss-installer-impl/README.md)
-- [README_EN.md](/root/danghuangshang-openmoss-installer-impl/README_EN.md)
+- [install.sh](../../install.sh)
+- [docs/doctor.md](../doctor.md)
+- [README.md](../../README.md)
+- [README_EN.md](../../README_EN.md)
 - implementation 入口 / 计划 / rehearsal 文档
 
 未涉及：
@@ -316,10 +316,10 @@ Phase 1 的判断结果是：**必须修改 `install.sh`。**
 
 此前唯一的阻塞点是：
 
-- [install.sh](/root/danghuangshang-openmoss-installer-impl/install.sh#L27)
-- [docs/doctor.md](/root/danghuangshang-openmoss-installer-impl/docs/doctor.md#L12)
-- [README.md](/root/danghuangshang-openmoss-installer-impl/README.md#L91)
-- [README_EN.md](/root/danghuangshang-openmoss-installer-impl/README_EN.md#L36)
+- [install.sh](../../install.sh#L27)
+- [docs/doctor.md](../doctor.md#L12)
+- [README.md](../../README.md#L91)
+- [README_EN.md](../../README_EN.md#L36)
 
 这些入口此前都把远程 doctor 来源固定为：
 
@@ -350,7 +350,7 @@ https://raw.githubusercontent.com/fenglimg/danghuangshang/local-host-install/doc
 按当前证据，第一批最值得执行的是：
 
 1. 核对 `install.sh` 自动下载的 `doctor.sh` 是否必须从当前 fork 获取，而不是继续指向 upstream
-2. 核对 [docs/doctor.md](/root/danghuangshang-openmoss-installer-impl/docs/doctor.md) 的 curl 命令是否也应同步
+2. 核对 [docs/doctor.md](../doctor.md) 的 curl 命令是否也应同步
 3. 如果 1 和 2 成立，再做最小对齐改动
 4. 做一轮 implementation 级 rehearsal，证明对齐后仍满足惰性创建策略
 

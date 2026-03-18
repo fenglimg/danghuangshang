@@ -74,7 +74,7 @@ cp -a /root/clawd /tmp/openmoss-live-upgrade-20260317T162418Z/home/clawd
 执行：
 
 ```bash
-cd /root/danghuangshang-openmoss-exec/gui/server
+cd /root/danghuangshang/gui/server
 env BOLUO_AUTH_TOKEN=openmoss-rehearsal-token \
   BOLUO_GUI_PORT=18796 \
   BOLUO_BIND_HOST=127.0.0.1 \
@@ -159,7 +159,7 @@ env BOLUO_AUTH_TOKEN=openmoss-rehearsal-token \
 
 但这还不等于可以直接改 `install.sh`。
 
-到当前为止，`install.sh` 的最小交付策略已经由 [ADR-002](/root/danghuangshang-openmoss-exec/docs/openmoss/adr-002-installer-minimum-delivery-policy.md) 冻结。
+到当前为止，`install.sh` 的最小交付策略已经由 [ADR-002](./adr-002-installer-minimum-delivery-policy.md) 冻结。
 
 当前剩下的，不再是“要不要先定 policy”，而是：
 

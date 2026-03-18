@@ -14,7 +14,7 @@
 - OpenMOSS 6-wave 治理层收官
 - installer review 第一阶段文档与 `doctor.sh` 只读检查补强
 - 真实旧环境快照级 live upgrade rehearsal
-- [ADR-002](/root/danghuangshang-openmoss-exec/docs/openmoss/adr-002-installer-minimum-delivery-policy.md) 对安装器最小交付策略冻结
+- [ADR-002](./adr-002-installer-minimum-delivery-policy.md) 对安装器最小交付策略冻结
 
 同时，团队已明确收敛原则：
 
@@ -35,9 +35,9 @@ installer implementation 任务的规划基线固定为：
 - 基线提交：`8809807`
 - 当前必须继承的策略：ADR-002
 - 当前必须继承的验证结论：
-  - [6-wave-closeout-regression-checklist.md](/root/danghuangshang-openmoss-exec/docs/openmoss/6-wave-closeout-regression-checklist.md)
-  - [live-upgrade-rehearsal-2026-03-17.md](/root/danghuangshang-openmoss-exec/docs/openmoss/live-upgrade-rehearsal-2026-03-17.md)
-  - [install-readiness-assessment.md](/root/danghuangshang-openmoss-exec/docs/openmoss/install-readiness-assessment.md)
+  - [6-wave-closeout-regression-checklist.md](./6-wave-closeout-regression-checklist.md)
+  - [live-upgrade-rehearsal-2026-03-17.md](./live-upgrade-rehearsal-2026-03-17.md)
+  - [install-readiness-assessment.md](./install-readiness-assessment.md)
 
 说明：
 
@@ -79,11 +79,11 @@ installer implementation 任务的规划基线固定为：
 
 只有单独开立 installer implementation 任务后，以下文件才进入可修改候选范围：
 
-- [install.sh](/root/danghuangshang-openmoss-exec/install.sh)
-- [doctor.sh](/root/danghuangshang-openmoss-exec/doctor.sh)
-- [docs/doctor.md](/root/danghuangshang-openmoss-exec/docs/doctor.md)
-- [docs/host-install-migration.md](/root/danghuangshang-openmoss-exec/docs/host-install-migration.md)
-- [docs/install-prompt.md](/root/danghuangshang-openmoss-exec/docs/install-prompt.md)
+- [install.sh](../../install.sh)
+- [doctor.sh](../../doctor.sh)
+- [docs/doctor.md](../doctor.md)
+- [docs/host-install-migration.md](../host-install-migration.md)
+- [docs/install-prompt.md](../install-prompt.md)
 - 与该任务直接对应的 rehearsal / validation 文档
 
 允许的改动类型：

@@ -35,7 +35,7 @@
 
 证据：
 
-- [6-wave-closeout-regression-checklist.md](/root/danghuangshang-openmoss-exec/docs/openmoss/6-wave-closeout-regression-checklist.md)
+- [6-wave-closeout-regression-checklist.md](./6-wave-closeout-regression-checklist.md)
 
 ### 2. 真实旧环境快照升级已验证
 
@@ -48,7 +48,7 @@
 
 证据：
 
-- [live-upgrade-rehearsal-2026-03-17.md](/root/danghuangshang-openmoss-exec/docs/openmoss/live-upgrade-rehearsal-2026-03-17.md)
+- [live-upgrade-rehearsal-2026-03-17.md](./live-upgrade-rehearsal-2026-03-17.md)
 
 ### 3. 当前真正未收敛的是交付策略，不是技术可行性
 

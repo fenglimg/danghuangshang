@@ -22,7 +22,7 @@
 
 - `2026-03-17` 已完成 `L3` GUI 人工联调收官
 - 当前已开始 installer review 第一波改造：`doctor.sh` 与 migration 文档补充 OpenMOSS state 规则
-- `2026-03-17` 已通过 [ADR-002](/root/danghuangshang-openmoss-exec/docs/openmoss/adr-002-installer-minimum-delivery-policy.md) 冻结安装器最小交付策略
+- `2026-03-17` 已通过 [ADR-002](./adr-002-installer-minimum-delivery-policy.md) 冻结安装器最小交付策略
 - 当前仍然没有进入 `install.sh` 实装阶段
 
 ---
@@ -46,15 +46,15 @@
 证据：
 
 - task core 已完成：
-  - [task-core index.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/task-core/index.js)
+  - [task-core index.js](../../gui/server/openmoss/task-core/index.js)
 - activity log 已完成：
-  - [activity-log service.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/activity-log/service.js)
+  - [activity-log service.js](../../gui/server/openmoss/activity-log/service.js)
 - review 已完成：
-  - [review service.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/review/service.js)
+  - [review service.js](../../gui/server/openmoss/review/service.js)
 - patrol 已完成：
-  - [patrol service.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/patrol/service.js)
+  - [patrol service.js](../../gui/server/openmoss/patrol/service.js)
 - governance GUI 已完成：
-  - [Governance.tsx](/root/danghuangshang-openmoss-exec/gui/src/pages/Governance.tsx)
+  - [Governance.tsx](../../gui/src/pages/Governance.tsx)
 
 判断理由：
 
@@ -67,8 +67,8 @@
 
 证据：
 
-- [ADR-001](/root/danghuangshang-openmoss-exec/docs/openmoss/adr-001-absorption-boundary.md)
-- [task-core storage.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/task-core/storage.js#L33)
+- [ADR-001](./adr-001-absorption-boundary.md)
+- [task-core storage.js](../../gui/server/openmoss/task-core/storage.js#L33)
 
 当前已冻结为：
 
@@ -88,9 +88,9 @@
 
 证据：
 
-- [tasks.csv](/root/danghuangshang-openmoss-exec/.workflow/.csv-wave/cwp-openmoss-absorption-20260316/tasks.csv)
-- [roadmap.md](/root/danghuangshang-openmoss-exec/.workflow/.roadmap/RMAP-openmoss-absorption-2026-03-16/roadmap.md)
-- [issues.jsonl](/root/danghuangshang-openmoss-exec/.workflow/issues/issues.jsonl)
+- [6-wave-closeout-regression-checklist.md](./6-wave-closeout-regression-checklist.md)
+- [ADR-001](./adr-001-absorption-boundary.md)
+- [OpenMOSS 吸收矩阵](./absorption-matrix.md)
 
 判断理由：
 
@@ -108,7 +108,7 @@
 证据：
 
 - 已有 schema version：
-  - [task-core storage.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/task-core/storage.js#L48)
+  - [task-core storage.js](../../gui/server/openmoss/task-core/storage.js#L48)
 - 但没有 migration runner
 - 没有版本升级脚本
 - 没有 schema upgrade 文档
@@ -126,7 +126,7 @@
 
 - API 与 GUI 都已经完成
 - 已完成一次基于真实旧环境快照的 live upgrade rehearsal：
-  - [live-upgrade-rehearsal-2026-03-17.md](/root/danghuangshang-openmoss-exec/docs/openmoss/live-upgrade-rehearsal-2026-03-17.md)
+  - [live-upgrade-rehearsal-2026-03-17.md](./live-upgrade-rehearsal-2026-03-17.md)
 - 验证结论：
   - 旧配置未被破坏
   - `state/openmoss` 在未使用治理能力前保持不存在
@@ -148,10 +148,10 @@
 证据：
 
 - 代码已能自行 `mkdir -p` 初始化：
-  - [task-core storage.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/task-core/storage.js#L15)
-  - [activity-log storage.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/activity-log/storage.js)
-  - [review storage.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/review/storage.js)
-  - [patrol storage.js](/root/danghuangshang-openmoss-exec/gui/server/openmoss/patrol/storage.js)
+  - [task-core storage.js](../../gui/server/openmoss/task-core/storage.js#L15)
+  - [activity-log storage.js](../../gui/server/openmoss/activity-log/storage.js)
+  - [review storage.js](../../gui/server/openmoss/review/storage.js)
+  - [patrol storage.js](../../gui/server/openmoss/patrol/storage.js)
 
 判断理由：
 
@@ -169,7 +169,7 @@
 证据：
 
 - `doctor.sh` 已新增 OpenMOSS state 检查：
-  - [doctor.sh](/root/danghuangshang-openmoss-exec/doctor.sh)
+  - [doctor.sh](../../doctor.sh)
 - 已覆盖：
   - `~/.openclaw/state/openmoss/` 是否存在
   - `meta/schema-version.json` 是否存在
@@ -190,8 +190,8 @@
 
 证据：
 
-- [host-install-migration.md](/root/danghuangshang-openmoss-exec/docs/host-install-migration.md)
-- [install-prompt.md](/root/danghuangshang-openmoss-exec/docs/install-prompt.md)
+- [host-install-migration.md](../host-install-migration.md)
+- [install-prompt.md](../install-prompt.md)
 
 当前状态：
 
@@ -212,7 +212,7 @@
 
 证据：
 
-- [install.sh](/root/danghuangshang-openmoss-exec/install.sh)
+- [install.sh](../../install.sh)
 
 当前问题：
 
@@ -227,7 +227,7 @@
 
 更新：
 
-- 已新增一条**提示型** OpenMOSS 交付说明到 [install.sh](/root/danghuangshang-openmoss-exec/install.sh)
+- 已新增一条**提示型** OpenMOSS 交付说明到 [install.sh](../../install.sh)
 - 该说明只负责解释：
   - `state/openmoss` 不会在安装阶段预创建
   - 首次治理使用时会惰性创建
@@ -294,12 +294,12 @@
 
 最合理的顺序不是直接改 `install.sh`，而是：
 
-1. 已完成 [`6-wave-closeout-regression-checklist.md`](/root/danghuangshang-openmoss-exec/docs/openmoss/6-wave-closeout-regression-checklist.md)
+1. 已完成 [`6-wave-closeout-regression-checklist.md`](./6-wave-closeout-regression-checklist.md)
 2. installer review 第一波已完成：
    - `doctor.sh` 首轮检查已落地
    - migration 文档已覆盖旧环境惰性接入
 3. installer policy 已由 ADR-002 冻结
-4. 下一步如需继续推进，必须先进入独立的 [installer-implementation-entry.md](/root/danghuangshang-openmoss-exec/docs/openmoss/installer-implementation-entry.md)
+4. 下一步如需继续推进，必须先进入独立的 [installer-implementation-entry.md](./installer-implementation-entry.md)
 5. 只有完成基于 ADR-002 的 implementation / validation，才允许真正进入 `install.sh` 修改
 
 ---
@@ -313,4 +313,4 @@
 这正符合当前 SOP：  
 **先完成核心治理层收官，再进入交付评审，而不是让安装器替代验证。**
 
-如果后续真的要动脚本，应以 [installer-implementation-entry.md](/root/danghuangshang-openmoss-exec/docs/openmoss/installer-implementation-entry.md) 作为单独任务入口，而不是继续把实现混在本评审文档里。
+如果后续真的要动脚本，应以 [installer-implementation-entry.md](./installer-implementation-entry.md) 作为单独任务入口，而不是继续把实现混在本评审文档里。

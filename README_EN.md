@@ -37,11 +37,26 @@ bash <(curl -fsSL https://raw.githubusercontent.com/wanikua/danghuangshang/main/
 
 🤖 **Don't want to read docs?** Give [this Prompt](./docs/install-prompt.md) to your AI assistant (Claude / ChatGPT / DeepSeek) and let it guide you step by step.
 
+📚 **Want the full map first?** Start with [Feature Overview](./docs/features.md), [Usage Modes](./docs/usage-modes.md), [Feature Matrix](./docs/feature-matrix.md), and [Testing Checklist](./docs/testing-checklist.md).
+
 </div>
 
 <p align="center">
   <img src="./images/flow-architecture.png" alt="System Architecture Flow" width="80%" />
 </p>
+
+---
+
+## Documentation Map
+
+If you want the shortest path to understand the product and test it end to end, use this order:
+
+1. [Feature Overview](./docs/features.md) for the full capability map
+2. [Usage Modes](./docs/usage-modes.md) for the main ways to use the product
+3. [Feature Matrix](./docs/feature-matrix.md) for capability, entrypoint, evidence, and test mapping
+4. [GUI Page Guide](./docs/gui-pages.md) for the full dashboard route map
+5. [Testing Checklist](./docs/testing-checklist.md) for step-by-step validation
+6. [OpenMOSS: What You Can Use Now](./docs/openmoss/what-you-can-use-now.md) for the current governance boundary
 
 ---
 
@@ -375,6 +390,8 @@ cd server && npm install && node index.js
 Access at: `http://your-server-ip:18795`
 
 > 💡 For production, use Nginx reverse proxy + HTTPS instead of exposing the port directly.
+>
+> 📖 Full page-by-page breakdown: [GUI Page Guide](./docs/gui-pages.md)
 
 ### Discord as GUI
 

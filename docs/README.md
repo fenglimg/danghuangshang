@@ -31,6 +31,21 @@
 | [基础篇教程](./tutorial-basics.md) | 从零开始的保姆级教程（30 分钟） |
 | [进阶篇教程](./tutorial-advanced.md) | tmux / GitHub / Notion / Cron / Prompt |
 
+## 🧭 功能与玩法
+
+| 文档 | 说明 |
+|------|------|
+| [功能总览](./features.md) | 一页看懂全部能力、入口、玩法和 OpenMOSS 所在位置 |
+| [玩法模式](./usage-modes.md) | 司礼监调度、Discord 多 Bot、飞书单 Bot、纯 WebUI、翰林院等玩法总览 |
+| [功能矩阵](./feature-matrix.md) | 把特性、入口、前置、证据、测试项串成一张总表 |
+| [GUI 页面总览](./gui-pages.md) | 16 个 GUI 页面分别做什么 |
+
+## 🧪 测试与验证
+
+| 文档 | 说明 |
+|------|------|
+| [全量手测清单](./testing-checklist.md) | 按 P0/P1/P2 分层执行的完整手测清单 |
+
 ## ⚙️ 可选增强
 
 | 文档 | 说明 |
@@ -38,8 +53,19 @@
 | [Notion 接入](./notion-setup.md) | 自动日报/周报/知识库归档 |
 | [语义记忆搜索](./memory-search.md) | Embedding 配置（DashScope / OpenAI / Gemini） |
 | [GUI 管理界面](./gui.md) | Web Dashboard + Discord + Notion 三层 GUI |
+| [Skills & Extensions](./skills-and-extensions.md) | 预装技能、扩展插件与典型场景 |
 | [安全须知](./security.md) | Workspace 权限 + Sandbox 沙箱配置 |
 | [配置诊断](./doctor.md) | 一键诊断 + @everyone 不触发排查 |
+
+## 📌 推荐阅读顺序
+
+如果你是第一次看这个项目，建议按下面顺序阅读：
+
+1. [功能总览](./features.md)
+2. [玩法模式](./usage-modes.md)
+3. [功能矩阵](./feature-matrix.md)
+4. [GUI 页面总览](./gui-pages.md)
+5. [全量手测清单](./testing-checklist.md)
 
 ## 🏛️ 深入了解
 
@@ -49,6 +75,7 @@
 | [菠萝王朝案例](./pineapple-dynasty.md) | 14 Agent 真实运行的完整案例 |
 | [上游同步策略](./upstream-sync.md) | `upstream-main` / `local-host-install` 分支同步方式 |
 | [OpenMOSS 吸收开发流程 SOP](./openmoss-integration-sop.md) | 三阶段集成、分支边界、`install.sh` 准入规则 |
+| [OpenMOSS 当前可用能力](./openmoss/what-you-can-use-now.md) | 用户视角看当前已经能用什么、还没支持什么 |
 | [OpenMOSS ADR-001](./openmoss/adr-001-absorption-boundary.md) | 吸收边界、角色映射、一期存储和 `install.sh` 冻结规则 |
 | [OpenMOSS ADR-002](./openmoss/adr-002-installer-minimum-delivery-policy.md) | 安装器最小交付策略，明确 `state/openmoss` 不由 `install.sh` 预创建 |
 | [OpenMOSS 6-Wave 收官回归清单](./openmoss/6-wave-closeout-regression-checklist.md) | 六个 wave 收官时该做的自动化、API、GUI、数据面回归 |
