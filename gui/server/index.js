@@ -16,6 +16,7 @@ import { promisify } from 'util';
 import { OpenMossTaskService } from './openmoss/activity-log/index.js';
 import { ReviewWorkflowService } from './openmoss/review/index.js';
 import { PatrolService } from './openmoss/patrol/index.js';
+import { resolveOpenMossStateDir } from './openmoss/task-core/storage.js';
 const execAsync = promisify(_exec);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -65,14 +66,18 @@ const HOME = process.env.HOME || '/home/ubuntu';
 // OpenClaw 配置目录
 const OPENCLAW_DIR = join(HOME, '.openclaw');
 
+// OpenMOSS state directory (defaults to ~/.openclaw/state/openmoss)
+// Override via OPENMOSS_STATE_DIR to relocate/segregate governance data.
+const OPENMOSS_STATE_DIR = resolveOpenMossStateDir(process.env.OPENMOSS_STATE_DIR);
+
 const STATE_DIR = OPENCLAW_DIR;
 const AGENTS_DIR = join(STATE_DIR, 'agents');
 const CONFIG_PATH = existsSync(join(OPENCLAW_DIR, 'openclaw.json'))
   ? join(OPENCLAW_DIR, 'openclaw.json')
   : join(OPENCLAW_DIR, 'openclaw.json');
-const openMossTaskService = new OpenMossTaskService();
-const openMossReviewService = new ReviewWorkflowService();
-const openMossPatrolService = new PatrolService();
+const openMossTaskService = new OpenMossTaskService({ rootDir: OPENMOSS_STATE_DIR });
+const openMossReviewService = new ReviewWorkflowService({ rootDir: OPENMOSS_STATE_DIR });
+const openMossPatrolService = new PatrolService({ rootDir: OPENMOSS_STATE_DIR });
 
 app.use(cors());
 app.use(express.json());
