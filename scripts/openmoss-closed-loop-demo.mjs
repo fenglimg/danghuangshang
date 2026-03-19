@@ -3,21 +3,61 @@
  * OpenMOSS closed-loop demo for danghuangshang GUI server.
  *
  * Prereqs:
- *   - GUI server running (default: http://127.0.0.1:18795)
- *   - BOLUO_AUTH_TOKEN exported (same token the server uses)
+ *   - GUI server running
+ *   - Auth token available (env BOLUO_AUTH_TOKEN or --token)
  *
- * Optional:
+ * Usage:
+ *   node scripts/openmoss-closed-loop-demo.mjs \
+ *     --baseUrl https://console.example.xyz \
+ *     --token $BOLUO_AUTH_TOKEN
+ *
+ * Env fallbacks:
  *   - OPENMOSS_GUI_URL (default http://127.0.0.1:${BOLUO_GUI_PORT||18795})
+ *   - BOLUO_AUTH_TOKEN
  */
+
+function parseArgs(argv) {
+  const out = {};
+  for (let i = 0; i < argv.length; i += 1) {
+    const a = argv[i];
+    if (a === '--baseUrl' || a === '--base-url') {
+      out.baseUrl = argv[i + 1];
+      i += 1;
+      continue;
+    }
+    if (a === '--token') {
+      out.token = argv[i + 1];
+      i += 1;
+      continue;
+    }
+    if (a === '--help' || a === '-h') {
+      out.help = true;
+      continue;
+    }
+  }
+  return out;
+}
+
+const args = parseArgs(process.argv.slice(2));
+if (args.help) {
+  console.log(`OpenMOSS closed-loop demo\n\n` +
+    `Options:\n` +
+    `  --baseUrl <url>   GUI server base URL (e.g. https://console.241412.xyz)\n` +
+    `  --token <token>   Auth token (same as BOLUO_AUTH_TOKEN)\n\n` +
+    `Env:\n` +
+    `  OPENMOSS_GUI_URL, BOLUO_GUI_PORT, BOLUO_AUTH_TOKEN\n`);
+  process.exit(0);
+}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const baseUrl = process.env.OPENMOSS_GUI_URL
+const baseUrl = args.baseUrl
+  || process.env.OPENMOSS_GUI_URL
   || `http://127.0.0.1:${process.env.BOLUO_GUI_PORT || 18795}`;
 
-const token = process.env.BOLUO_AUTH_TOKEN;
+const token = args.token || process.env.BOLUO_AUTH_TOKEN;
 if (!token) {
-  console.error('ERROR: BOLUO_AUTH_TOKEN is required');
+  console.error('ERROR: auth token required. Set BOLUO_AUTH_TOKEN or pass --token');
   process.exit(1);
 }
 
