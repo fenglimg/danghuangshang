@@ -1,0 +1,4 @@
+需求：把 OpenProse 融入 OpenClaw + danghuangshang，做最小 demo 并固化 runbook。
+约束：
+- 先不做全自动高风险操作
+- 输出要适合直接贴 Discord（结论先行、要点 bullet）

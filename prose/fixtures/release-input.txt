@@ -1,0 +1,4 @@
+发布需求：
+- 版本：v0.1.0
+- 变更：接入 OpenProse demo（triage/review/release）
+- 约束：需要一份发布前检查清单 + 公告草稿
