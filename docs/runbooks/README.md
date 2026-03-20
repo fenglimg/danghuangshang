@@ -9,3 +9,5 @@
 - [OpenMOSS Governance — Ops Runbook](./openmoss-governance-ops.md)
 
 - [danghuangshang worktree / 分支回收 SOP（ff-only）](./danghuangshang-worktree-recovery.md)
+
+- [OpenClaw 浏览器能力（Ubuntu）安装/配置/验收](./openclaw-browser-ubuntu.md)
