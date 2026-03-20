@@ -6,7 +6,7 @@ import { getAuthToken } from "../utils/auth"
 const CONFIGURED_COURT_CHANNEL = import.meta.env.VITE_COURT_CHANNEL || ''
 
 interface Bot {
-  id: string; name: string; displayName: string; model: string; hasToken: boolean
+  id: string; name: string; displayName: string; model: string; hasToken: boolean; roleId?: string
 }
 
 const COLORS: Record<string, { bg: string; hat: string }> = {
@@ -137,19 +137,28 @@ export default function Court() {
   const sendCommand = async () => {
     if (!command.trim()) return
     const target = selectedBot || 'silijian'
-    const botName = bots.find(b => b.id === target)?.displayName || target
+    const bot = bots.find(b => b.id === target)
+    const botName = bot?.displayName || target
+    const botRoleId = bot?.roleId || ''
     let finalMessage = command
     if (selectedBot && selectedBot !== 'silijian') {
-      finalMessage = `@${botName} ${command}`
+      finalMessage = botRoleId ? `<@&${botRoleId}> ${command}` : `@${botName} ${command}`
     }
     setSending(true)
     try {
-      const r = await fetch('/api/command', {
+      const useRoleCommand = (selectedBot && selectedBot !== 'silijian' && botRoleId && CONFIGURED_COURT_CHANNEL);
+      const url = useRoleCommand ? '/api/role-command' : '/api/command';
+      const body = useRoleCommand
+        ? { agentId: target, text: command, channel: CONFIGURED_COURT_CHANNEL }
+        : { ...(CONFIGURED_COURT_CHANNEL ? { channel: CONFIGURED_COURT_CHANNEL } : {}), message: finalMessage, botId: target };
+
+      const r = await fetch(url, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${getAuthToken()}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...(CONFIGURED_COURT_CHANNEL ? { channel: CONFIGURED_COURT_CHANNEL } : {}), message: finalMessage, botId: target })
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getAuthToken()}` },
+        body: JSON.stringify(body)
       })
-      const d = await r.json()
+
+const d = await r.json()
       setMessages(prev => [...prev, {
         bot: botName, text: command,
         time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
