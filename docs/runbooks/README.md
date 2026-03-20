@@ -7,3 +7,5 @@
 - [Codex TUI](./codex-tui.md)
 - [Search Layer Notes](./search-layer-notes.md)
 - [OpenMOSS Governance — Ops Runbook](./openmoss-governance-ops.md)
+
+- [danghuangshang worktree / 分支回收 SOP（ff-only）](./danghuangshang-worktree-recovery.md)
