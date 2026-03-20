@@ -16,6 +16,7 @@ import { promisify } from 'util';
 import { OpenMossTaskService } from './openmoss/activity-log/index.js';
 import { ReviewWorkflowService } from './openmoss/review/index.js';
 import { PatrolService } from './openmoss/patrol/index.js';
+import { resolveOpenMossStateDir } from './openmoss/task-core/storage.js';
 const execAsync = promisify(_exec);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,6 +34,7 @@ const PORT = process.env.BOLUO_GUI_PORT || 18795;
 
 // SEC-03: 不再使用硬编码默认 Token
 import crypto from 'crypto';
+import { startDiscordListener } from './discord_listener.js';
 let AUTH_TOKEN = process.env.BOLUO_AUTH_TOKEN;
 if (!AUTH_TOKEN || AUTH_TOKEN === 'changeme') {
   AUTH_TOKEN = crypto.randomBytes(16).toString('hex');
@@ -65,14 +67,18 @@ const HOME = process.env.HOME || '/home/ubuntu';
 // OpenClaw 配置目录
 const OPENCLAW_DIR = join(HOME, '.openclaw');
 
+// OpenMOSS state directory (defaults to ~/.openclaw/state/openmoss)
+// Override via OPENMOSS_STATE_DIR to relocate/segregate governance data.
+const OPENMOSS_STATE_DIR = resolveOpenMossStateDir(process.env.OPENMOSS_STATE_DIR);
+
 const STATE_DIR = OPENCLAW_DIR;
 const AGENTS_DIR = join(STATE_DIR, 'agents');
 const CONFIG_PATH = existsSync(join(OPENCLAW_DIR, 'openclaw.json'))
   ? join(OPENCLAW_DIR, 'openclaw.json')
   : join(OPENCLAW_DIR, 'openclaw.json');
-const openMossTaskService = new OpenMossTaskService();
-const openMossReviewService = new ReviewWorkflowService();
-const openMossPatrolService = new PatrolService();
+const openMossTaskService = new OpenMossTaskService({ rootDir: OPENMOSS_STATE_DIR });
+const openMossReviewService = new ReviewWorkflowService({ rootDir: OPENMOSS_STATE_DIR });
+const openMossPatrolService = new PatrolService({ rootDir: OPENMOSS_STATE_DIR });
 
 app.use(cors());
 app.use(express.json());
@@ -1620,6 +1626,31 @@ app.get('/api/notion/:id', authMiddleware, async (req, res) => {
   }
 });
 
+
+// Send a Discord message as silijian (used by role-router ack/summary)
+async function sendDiscordAsSilijian({ channelId, content }) {
+  if (!channelId || !/^\d{17,20}$/.test(channelId)) throw new Error('Invalid channelId');
+  const config = getOpenclawConfig() || {};
+  const accounts = config.channels?.discord?.accounts || {};
+  let senderAccount = accounts['silijian'] || accounts['main'];
+  if (!senderAccount?.token) {
+    const firstKey = Object.keys(accounts)[0];
+    senderAccount = firstKey ? accounts[firstKey] : null;
+  }
+  if (!senderAccount?.token) throw new Error('No discord token available');
+
+  const r = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bot ${senderAccount.token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content })
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(`Discord send failed ${r.status}: ${t}`);
+  }
+  return r.json();
+}
+
 // 获取Discord频道最新消息
 app.get('/api/channel-messages', authMiddleware, async (req, res) => {
   // channel 必填，不使用硬编码默认值
@@ -1691,9 +1722,101 @@ app.get('/api/channel-messages', authMiddleware, async (req, res) => {
   }
 });
 
+
+// --- Role router (Discord Gateway listener) ---
+// Enables: @Role -> internal dispatch (bingbu/gongbu) and silijian summary reply.
+// Env:
+// - BOLUO_DISCORD_LISTENER_TOKEN (recommended: reuse silijian bot token)
+// - BOLUO_COURT_CHANNEL (court channel id)
+// - BOLUO_ROLE_BINGBU / BOLUO_ROLE_GONGBU (role ids)
+// - BOLUO_ROLE_ROUTER_ENABLED=1
+
+const ROLE_ROUTER_ENABLED = process.env.BOLUO_ROLE_ROUTER_ENABLED === '1';
+const COURT_CHANNEL_ID = process.env.BOLUO_COURT_CHANNEL;
+// Role mapping: env keys like BOLUO_ROLE_BINGBU=... -> agentId 'bingbu'
+
+function roleIdForAgent(agentId) {
+  const key = `BOLUO_ROLE_${String(agentId).toUpperCase()}`;
+  return process.env[key] || null;
+}
+
+const ROLE_MAP = {};
+for (const [k,v] of Object.entries(process.env)) {
+  if (!k.startsWith('BOLUO_ROLE_')) continue;
+  if (!v) continue;
+  const agentId = k.replace('BOLUO_ROLE_', '').toLowerCase();
+  // allow ALIAS like BOLUO_ROLE_HANLIN_ZHANG etc
+  ROLE_MAP[v] = agentId;
+}
+
+// minimal in-memory de-dupe to avoid double-dispatch
+const _roleRouterSeen = new Set();
+
+
+function shortTextForAck(text, maxLen = 160) {
+  const t = String(text || '').replace(/\s+/g, ' ').trim();
+  if (t.length <= maxLen) return t;
+  return t.slice(0, maxLen) + '…';
+}
+
+async function roleRouterDispatch({ targetBotId, message, channelId }) {
+  const label = AGENT_DEPT_MAP[targetBotId] || targetBotId;
+
+  // 1) Immediate ack (human-visible)
+  try {
+    await sendDiscordAsSilijian({ channelId, content: `【司礼监】已接旨，转【${label}】办理。旨意：${shortTextForAck(message)}` });
+  } catch (e) {
+    console.error('[role-router] ack send failed:', e?.message || e);
+  }
+
+  // 2) Execute as the target agent, deliver back to the same court channel
+  try {
+    const payload = `（role-router）主公在Discord通过@${label}角色组下旨：${message}
+
+【输出要求】你对外回复必须以“【${label}】”开头，然后再写内容；禁止省略该前缀。`;
+    const replyTo = `channel:${channelId}`;
+    const safeMsg = payload.replace(/'/g, "'\''").substring(0, 3500);
+
+    const cmd = `${CLI_CMD} agent --agent ${targetBotId} -m '${safeMsg}' --deliver --channel discord --reply-to ${replyTo} --reply-account silijian`;
+    const { stdout, stderr } = await execAsync(`${cmd} 2>&1`, { encoding: 'utf-8', timeout: 60000 });
+    const out = (stdout || stderr || '').trim();
+    console.log(`[role-router] agent deliver -> ${targetBotId}: ${out}`);
+  } catch (e) {
+    console.error('[role-router] agent deliver failed:', e?.message || e);
+  }
+}
+
 // 发送指令 — 支持 Discord 直连 + 通用 gateway wake 兜底
 // SEC-31: /api/command rate limiter — 每分钟最多 10 次
 const _cmdRateLimit = { count: 0, resetAt: 0 };
+
+
+// Role-command: bypass Discord messageCreate, dispatch directly (WebUI -> role-router)
+app.post('/api/role-command', authMiddleware, async (req, res) => {
+  try {
+    const { agentId, text, channel } = req.body || {};
+    console.log(`[AUDIT] /api/role-command agentId=${agentId || 'none'} channel=${channel || 'none'} textLen=${(text||'').length}`);
+    const safeAgentId = agentId ? sanitizeAgentId(agentId) : null;
+    if (!safeAgentId) return res.status(400).json({ error: 'agentId is required' });
+    if (!text || typeof text !== 'string') return res.status(400).json({ error: 'text is required' });
+    if (!channel || !/^\d{17,20}$/.test(channel)) return res.status(400).json({ error: 'channel is required (discord channel id)' });
+
+    // De-dupe by simple hash (best-effort)
+    const key = `${safeAgentId}:${channel}:${text.slice(0,100)}`;
+    if (_roleRouterSeen.has(key)) return res.json({ ok: true, deduped: true });
+    _roleRouterSeen.add(key);
+    if (_roleRouterSeen.size > 4000) {
+      const first = _roleRouterSeen.values().next().value;
+      _roleRouterSeen.delete(first);
+    }
+
+    await roleRouterDispatch({ targetBotId: safeAgentId, message: text, channelId: channel });
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error('[role-router] /api/role-command failed:', e);
+    return res.status(500).json({ error: e?.message || String(e) });
+  }
+});
 
 app.post('/api/command', authMiddleware, async (req, res) => {
   // Rate limit check
@@ -1825,6 +1948,7 @@ app.get('/api/bots', authMiddleware, (req, res) => {
             model: acc.model || defaultModel,
             hasToken: !!acc.token,
             platforms: [],
+            roleId: roleIdForAgent(id),
           };
         }
         const platName = platform === 'lark' ? 'feishu' : platform;
@@ -1851,6 +1975,7 @@ app.get('/api/bots', authMiddleware, (req, res) => {
             model: agentConf.model?.primary || defaultModel,
             hasToken: true,  // agent 在配置里就算有效
             platforms: [],
+            roleId: roleIdForAgent(id),
           };
         }
         // 补充 model 信息
@@ -1875,6 +2000,7 @@ app.get('/api/bots', authMiddleware, (req, res) => {
             model: sessData.model || defaultModel,
             hasToken: true,  // 有会话数据说明 agent 已运行过
             platforms: detectAgentPlatforms(id),
+            roleId: roleIdForAgent(id),
           };
         }
       }
@@ -2624,6 +2750,44 @@ const IS_DOCKER = (() => {
   return false;
 })();
 const BIND_HOST = process.env.BOLUO_BIND_HOST || (IS_DOCKER ? '0.0.0.0' : '127.0.0.1');
+
+// Start Discord Gateway listener (role-router)
+if (ROLE_ROUTER_ENABLED) {
+  try {
+    startDiscordListener({
+      token: process.env.BOLUO_DISCORD_LISTENER_TOKEN,
+      courtChannelId: COURT_CHANNEL_ID,
+      onMessage: async (msg) => {
+        if (process.env.BOLUO_ROLE_ROUTER_DEBUG === '1') console.log(`[role-router] inbound msgId=${msg.id} author=${msg.author?.id} roles=${JSON.stringify(Array.from(msg.mentions?.roles?.keys?.() || []))} content=${JSON.stringify((msg.content||'').slice(0,200))}`);
+        const roleIds = Array.from(msg.mentions?.roles?.keys?.() || []);
+        if (!roleIds.length) return;
+
+        let targetBotId = null;
+        for (const rid of roleIds) {
+          if (ROLE_MAP[rid]) { targetBotId = ROLE_MAP[rid]; break; }
+        }
+        if (!targetBotId) return;
+
+        if (_roleRouterSeen.has(msg.id)) return;
+        _roleRouterSeen.add(msg.id);
+        if (_roleRouterSeen.size > 2000) {
+          const first = _roleRouterSeen.values().next().value;
+          _roleRouterSeen.delete(first);
+        }
+
+        const clean = (msg.cleanContent || msg.content || '').trim();
+        const text = clean || '[无文本内容]';
+
+        await roleRouterDispatch({ targetBotId, message: text, channelId: msg.channelId });
+      },
+      log: console,
+    });
+    console.log('[role-router] discord listener enabled');
+  } catch (e) {
+    console.error('[role-router] failed to start discord listener:', e?.message || e);
+  }
+}
+
 server.listen(PORT, BIND_HOST, () => {
   console.log(`Boluo GUI running on http://${BIND_HOST}:${PORT} (HTTP + WebSocket)`);
   if (BIND_HOST === '0.0.0.0') {
