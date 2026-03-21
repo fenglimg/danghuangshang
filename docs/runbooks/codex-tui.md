@@ -16,7 +16,7 @@
 
 1. 进入 TUI（确保有 TTY）
 2. 先跑 1~3 条最短命令（5~10 秒内能出结果）
-   - `cd /root/danghuangshang && git status -sb`
+   - `cd /root/.openclaw/workspace/_repos/danghuangshang && git status -sb`
    - `git log --oneline -n 5 --decorate`
    - `git rev-list --left-right --count A...B`
 3. 等输出稳定后再做下一步动作（比如 merge/push）

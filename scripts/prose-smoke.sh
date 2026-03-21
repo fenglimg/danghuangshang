@@ -1,17 +1,36 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Smoke 的目标：确认“有一个可用入口”能执行最简单 prose workflow。
-# 当前先做占位：收集环境信息 + 给出下一步提示。
+# Smoke 的目标：在不依赖 Discord 的情况下，用 CLI 触发 OpenProse VM 跑通一个最小 .prose。
+# 注意：如果固定 session-id 的历史被早期失败 run 弄脏，可能出现 transcript repair / missing tool result。
+# 因此这里默认使用一个“新鲜”的 smoke session-id（可通过环境变量覆盖）。
+
+SESSION_ID="${OPENPROSE_SESSION_ID:-danghuangshang-openprose-smoke}"
+PROGRAM_REL="prose/demos/01-smoke.prose"
+WORKSPACE_BASE="/root/clawd"
+SRC_PROGRAM="$(pwd)/${PROGRAM_REL}"
+DST_PROGRAM="${WORKSPACE_BASE}/${PROGRAM_REL}"
 
 echo "[smoke] repo=$(pwd)"
 
-if command -v openclaw >/dev/null 2>&1; then
-  echo "[smoke] openclaw: $(openclaw --version 2>/dev/null || true)"
-else
-  echo "[smoke] ERROR: openclaw not found in PATH"
+if ! command -v openclaw >/dev/null 2>&1; then
+  echo "[smoke] ERROR: openclaw not found in PATH" >&2
   exit 1
 fi
 
-echo "[smoke] NOTE: open-prose 入口尚未在此脚本中固化。"
-echo "[smoke] Next: 运行 'openclaw help' / 'openclaw plugins'（如支持）并在 runbook 里记录可用入口。"
+if [[ ! -f "${SRC_PROGRAM}" ]]; then
+  echo "[smoke] ERROR: source program not found: ${SRC_PROGRAM}" >&2
+  exit 1
+fi
+
+mkdir -p "$(dirname "${DST_PROGRAM}")"
+cp -f "${SRC_PROGRAM}" "${DST_PROGRAM}"
+
+echo "[smoke] openclaw: $(openclaw --version 2>/dev/null || true)"
+echo "[smoke] session-id=${SESSION_ID}"
+echo "[smoke] program=${DST_PROGRAM}"
+
+openclaw agent \
+  --session-id "${SESSION_ID}" \
+  --message "prose run ${DST_PROGRAM}" \
+  --timeout 600

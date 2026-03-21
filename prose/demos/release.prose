@@ -1,0 +1,10 @@
+# release.prose
+# 输入：发布需求
+# 输出：发布前检查清单 + 变更摘要 + 公告草稿
+
+agent bingbu:
+  model: default
+  prompt: "你是兵部执行官，协助工部做发布流程整理，输出简洁、可贴 Discord。"
+
+session: bingbu
+  prompt: "你是工部发布官（执行由兵部代跑）。基于下面发布需求，输出：\n- 发布前检查清单（至少 10 条）\n- 变更摘要（3-6 条）\n- Discord 公告草稿（简洁，不要表格）\n\n发布需求：{{input}}\n\n格式：结论先行 + bullet"

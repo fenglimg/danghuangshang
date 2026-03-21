@@ -73,9 +73,9 @@
 执行：
 
 ```bash
-cd /root/danghuangshang/gui/server
+cd /root/.openclaw/workspace/_repos/danghuangshang/gui/server
 npm run test:openmoss
-node --check /root/danghuangshang/gui/server/index.js
+node --check /root/.openclaw/workspace/_repos/danghuangshang/gui/server/index.js
 ```
 
 验收：
@@ -96,7 +96,7 @@ node --check /root/danghuangshang/gui/server/index.js
 执行：
 
 ```bash
-cd /root/danghuangshang/gui
+cd /root/.openclaw/workspace/_repos/danghuangshang/gui
 npx eslint gui/src/pages/Governance.tsx gui/src/App.tsx gui/src/types.ts
 npm run build
 ```

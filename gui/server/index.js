@@ -111,6 +111,15 @@ function getOpenclawConfig() {
   return null;
 }
 
+function resolveSecretRef(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object' && value.source === 'env' && value.id) {
+    return process.env[value.id] || '';
+  }
+  return '';
+}
+
 // SEC-15: 验证 agentId 防止路径遍历
 function sanitizeAgentId(id) {
   if (!id || typeof id !== 'string') return null;
@@ -1633,15 +1642,17 @@ async function sendDiscordAsSilijian({ channelId, content }) {
   const config = getOpenclawConfig() || {};
   const accounts = config.channels?.discord?.accounts || {};
   let senderAccount = accounts['silijian'] || accounts['main'];
-  if (!senderAccount?.token) {
+  let senderToken = resolveSecretRef(senderAccount?.token);
+  if (!senderToken) {
     const firstKey = Object.keys(accounts)[0];
     senderAccount = firstKey ? accounts[firstKey] : null;
+    senderToken = resolveSecretRef(senderAccount?.token);
   }
-  if (!senderAccount?.token) throw new Error('No discord token available');
+  if (!senderToken) throw new Error('No discord token available');
 
   const r = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
     method: 'POST',
-    headers: { 'Authorization': `Bot ${senderAccount.token}`, 'Content-Type': 'application/json' },
+    headers: { 'Authorization': `Bot ${senderToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ content })
   });
   if (!r.ok) {
@@ -1673,7 +1684,7 @@ app.get('/api/channel-messages', authMiddleware, async (req, res) => {
     const accounts = config.channels?.discord?.accounts || {};
     const firstAccountKey = Object.keys(accounts)[0];
     const account = firstAccountKey ? accounts[firstAccountKey] : null;
-    const token = account?.token;
+    const token = resolveSecretRef(account?.token);
     
     if (!token) {
       return res.status(400).json({ error: 'No Discord bot token configured (check channels.discord.accounts)' });
@@ -1769,20 +1780,38 @@ async function roleRouterDispatch({ targetBotId, message, channelId }) {
     console.error('[role-router] ack send failed:', e?.message || e);
   }
 
-  // 2) Execute as the target agent, deliver back to the same court channel
+  // 2) Execute as the target agent, then post the final text back to Discord explicitly.
   try {
     const payload = `（role-router）主公在Discord通过@${label}角色组下旨：${message}
 
 【输出要求】你对外回复必须以“【${label}】”开头，然后再写内容；禁止省略该前缀。`;
-    const replyTo = `channel:${channelId}`;
-    const safeMsg = payload.replace(/'/g, "'\''").substring(0, 3500);
+    const safeMsg = payload.replace(/'/g, "'\\''").substring(0, 3500);
 
-    const cmd = `${CLI_CMD} agent --agent ${targetBotId} -m '${safeMsg}' --deliver --channel discord --reply-to ${replyTo} --reply-account silijian`;
+    const cmd = `${CLI_CMD} agent --agent ${targetBotId} -m '${safeMsg}' --json`;
     const { stdout, stderr } = await execAsync(`${cmd} 2>&1`, { encoding: 'utf-8', timeout: 60000 });
-    const out = (stdout || stderr || '').trim();
-    console.log(`[role-router] agent deliver -> ${targetBotId}: ${out}`);
+    const raw = (stdout || stderr || '').trim();
+
+    let finalText = '';
+    try {
+      const parsed = JSON.parse(raw);
+      finalText = parsed?.result?.payloads?.map(p => p?.text).filter(Boolean).join('\n\n')
+        || parsed?.payloads?.map(p => p?.text).filter(Boolean).join('\n\n')
+        || '';
+    } catch {
+      finalText = raw;
+    }
+
+    finalText = String(finalText || '').trim();
+    if (!finalText) finalText = `【${label}】已执行，但未返回可显示内容。`;
+    if (finalText.length > 1800) finalText = finalText.slice(0, 1800) + '…';
+
+    await sendDiscordAsSilijian({ channelId, content: finalText });
+    console.log(`[role-router] agent deliver -> ${targetBotId}: ${finalText.slice(0, 200)}`);
   } catch (e) {
     console.error('[role-router] agent deliver failed:', e?.message || e);
+    try {
+      await sendDiscordAsSilijian({ channelId, content: `【司礼监】转办【${label}】时失败：${e?.message || e}` });
+    } catch {}
   }
 }
 
@@ -1851,15 +1880,17 @@ app.post('/api/command', authMiddleware, async (req, res) => {
       const accounts = config.channels?.discord?.accounts || {};
       // 优先用司礼监 token（代发旨意），而非目标部门自己发
       let senderAccount = accounts['silijian'] || accounts['main'];
-      if (!senderAccount?.token) {
+      let senderToken = resolveSecretRef(senderAccount?.token);
+      if (!senderToken) {
         const firstKey = Object.keys(accounts)[0];
         senderAccount = firstKey ? accounts[firstKey] : null;
+        senderToken = resolveSecretRef(senderAccount?.token);
       }
 
-      if (senderAccount?.token) {
+      if (senderToken) {
         const r = await fetch(`https://discord.com/api/v10/channels/${channel}/messages`, {
           method: 'POST',
-          headers: { 'Authorization': `Bot ${senderAccount.token}`, 'Content-Type': 'application/json' },
+          headers: { 'Authorization': `Bot ${senderToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ content: message })
         });
         if (r.ok) {
