@@ -1,0 +1,11 @@
+# 01-smoke.prose
+# 目标：最小可运行程序。
+# 说明：当前环境下 subagent runtime 会因 streamTo 注入触发硬失败，
+# 因此 smoke 先用 ACP runtime 跑通（执行 agent 临时用 codex，语气保持“兵部执行官”）。
+
+agent codex:
+  model: default
+  prompt: "你是兵部执行官（由 codex 代跑），输出简短、可贴 Discord 的结果。"
+
+session: codex
+  prompt: "输出一句：OpenProse smoke OK。并用 bullet 列出 2 条后续动作（不超过 2 行）。"
