@@ -17,6 +17,7 @@ import { OpenMossTaskService } from './openmoss/activity-log/index.js';
 import { ReviewWorkflowService } from './openmoss/review/index.js';
 import { PatrolService } from './openmoss/patrol/index.js';
 import { resolveOpenMossStateDir } from './openmoss/task-core/storage.js';
+import { ensureStudyRunsDir, readRunState, readRunEvents, readRunSummary, RunManager, EventLogger, EVENT_TYPE, buildRecoveryUpdate, evaluateRunHealth, resolveDiscordNotificationTarget, buildDiscordNotificationContent } from './study-runner/index.js';
 const execAsync = promisify(_exec);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -70,6 +71,7 @@ const OPENCLAW_DIR = join(HOME, '.openclaw');
 // OpenMOSS state directory (defaults to ~/.openclaw/state/openmoss)
 // Override via OPENMOSS_STATE_DIR to relocate/segregate governance data.
 const OPENMOSS_STATE_DIR = resolveOpenMossStateDir(process.env.OPENMOSS_STATE_DIR);
+const STUDY_RUNS_DIR = ensureStudyRunsDir(HOME);
 
 const STATE_DIR = OPENCLAW_DIR;
 const AGENTS_DIR = join(STATE_DIR, 'agents');
@@ -79,6 +81,8 @@ const CONFIG_PATH = existsSync(join(OPENCLAW_DIR, 'openclaw.json'))
 const openMossTaskService = new OpenMossTaskService({ rootDir: OPENMOSS_STATE_DIR });
 const openMossReviewService = new ReviewWorkflowService({ rootDir: OPENMOSS_STATE_DIR });
 const openMossPatrolService = new PatrolService({ rootDir: OPENMOSS_STATE_DIR });
+const studyRunManager = new RunManager({ homeDir: HOME });
+const studyEventLogger = new EventLogger({ homeDir: HOME });
 
 app.use(cors());
 app.use(express.json());
@@ -1322,6 +1326,346 @@ function parseCronJobs(data) {
   });
 }
 
+app.get('/api/study/runs', authMiddleware, async (req, res) => {
+  try {
+    const { readdirSync, existsSync } = await import('fs');
+    if (!existsSync(STUDY_RUNS_DIR)) return res.json({ runs: [] });
+    const files = readdirSync(STUDY_RUNS_DIR).filter(f => f.endsWith('.json'));
+    const runs = files.map(name => readRunState(HOME, name.replace(/\.json$/, ''))).filter(Boolean)
+      .sort((a, b) => String(b.startedAt || '').localeCompare(String(a.startedAt || '')));
+    return res.json({ runs });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'failed_to_list_study_runs' });
+  }
+});
+
+app.post('/api/study/runs', authMiddleware, (req, res) => {
+  try {
+    const run = studyRunManager.createRun(req.body || {});
+    res.status(201).json({ run });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/study/runs/:id/tool-event', authMiddleware, (req, res) => {
+  try {
+    const runId = sanitizeTaskId(req.params.id);
+    if (!runId) {
+      return res.status(400).json({ error: 'Invalid run ID' });
+    }
+
+    const body = req.body || {};
+    if (![EVENT_TYPE.TOOL_START, EVENT_TYPE.TOOL_END].includes(body.type)) {
+      return res.status(400).json({ error: 'Invalid tool event type' });
+    }
+    if (typeof body.tool !== 'string' || !body.tool.trim()) {
+      return res.status(400).json({ error: 'Tool name is required' });
+    }
+
+    const previousRun = studyRunManager.getRun(runId);
+    const run = studyRunManager.recordToolEvent(runId, body);
+    studyEventLogger.appendToolEventFlow(runId, body, run, previousRun);
+    res.json({ run });
+  } catch (err) {
+    const statusCode = err.message.includes('Run not found') ? 404 : 400;
+    res.status(statusCode).json({ error: err.message });
+  }
+});
+
+app.post('/api/study/runs/:id/heartbeat', authMiddleware, (req, res) => {
+  try {
+    const runId = sanitizeTaskId(req.params.id);
+    if (!runId) {
+      return res.status(400).json({ error: 'Invalid run ID' });
+    }
+
+    const run = studyRunManager.markHeartbeat(runId, req.body || {});
+    studyEventLogger.append(runId, {
+      type: EVENT_TYPE.HEARTBEAT,
+      ts: run.lastHeartbeatAt,
+      runId,
+      phase: run.currentPhase,
+      currentStepId: run.currentStepId,
+      currentTarget: run.currentTarget,
+      cumulativeActiveMs: run.cumulativeActiveMs,
+    });
+    res.json({ run });
+  } catch (err) {
+    const statusCode = err.message.includes('Run not found') ? 404 : 400;
+    res.status(statusCode).json({ error: err.message });
+  }
+});
+
+app.get('/api/study/runs/:id/events', authMiddleware, (req, res) => {
+  try {
+    const runId = sanitizeTaskId(req.params.id);
+    if (!runId) {
+      return res.status(400).json({ error: 'Invalid run ID', events: [] });
+    }
+
+    const run = studyRunManager.getRun(runId);
+    if (!run) {
+      return res.status(404).json({ error: 'Run not found', events: [] });
+    }
+
+    const events = readRunEvents(HOME, runId);
+    res.json({ runId, events });
+  } catch (err) {
+    res.status(500).json({ error: err.message, events: [] });
+  }
+});
+
+app.get('/api/study/runs/:id/summary', authMiddleware, (req, res) => {
+  try {
+    const runId = sanitizeTaskId(req.params.id);
+    if (!runId) {
+      return res.status(400).json({ error: 'Invalid run ID' });
+    }
+
+    const run = studyRunManager.getRun(runId);
+    if (!run) {
+      return res.status(404).json({ error: 'Run not found' });
+    }
+
+    const generated = (!run.summary || !readRunSummary(HOME, runId) || !run.notificationText)
+      && ['completed', 'summarizing', 'done'].includes(run.status)
+      ? studyRunManager.generateSummary(runId)
+      : null;
+
+    res.json({
+      runId,
+      summary: run.summary || generated?.summary || null,
+      markdown: readRunSummary(HOME, runId) || generated?.markdown || null,
+      nextRead: run.nextRead || generated?.nextRead || null,
+      notificationTarget: run.notificationTarget,
+      notificationStatus: run.notificationStatus || null,
+      notificationReadyAt: run.notificationReadyAt || null,
+      notificationText: run.notificationText || generated?.notificationText || null,
+      deliveryStatus: run.deliveryStatus || run.notificationStatus || null,
+      deliveryChannelId: run.deliveryChannelId || null,
+      lastDeliveryAttemptAt: run.lastDeliveryAttemptAt || null,
+      sentAt: run.sentAt || null,
+      messageId: run.messageId || null,
+      deliveryFailureReason: run.deliveryFailureReason || null,
+      deliveryRetryReady: run.deliveryRetryReady === true,
+      generatedFromState: !!generated,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/study/runs/:id/summary', authMiddleware, (req, res) => {
+  try {
+    const runId = sanitizeTaskId(req.params.id);
+    if (!runId) {
+      return res.status(400).json({ error: 'Invalid run ID' });
+    }
+
+    const previousRun = studyRunManager.getRun(runId);
+    if (!previousRun) {
+      return res.status(404).json({ error: 'Run not found' });
+    }
+
+    const body = req.body || {};
+    const action = body.action === 'start'
+      ? 'start'
+      : (body.action === 'generate'
+        ? 'generate'
+        : (body.action === 'complete' || body.action === undefined ? 'complete' : null));
+    if (!action) {
+      return res.status(400).json({ error: 'Invalid summary action' });
+    }
+
+    if (action === 'start') {
+      const run = studyRunManager.markSummarizing(runId, body);
+      studyEventLogger.appendSummaryStart(runId, run, previousRun, body);
+      return res.json({ run });
+    }
+
+    const hasPayload = body.summary !== undefined
+      || body.nextRead !== undefined
+      || (typeof body.markdown === 'string' && body.markdown.trim().length > 0)
+      || body.notificationText !== undefined;
+    const summaryInput = action === 'generate' || !hasPayload
+      ? studyRunManager.generateSummary(runId, body)
+      : body;
+
+    const run = studyRunManager.completeSummary(runId, summaryInput);
+    studyEventLogger.appendSummaryComplete(runId, summaryInput, run, previousRun);
+    return res.json({
+      run,
+      markdown: readRunSummary(HOME, runId),
+      generatedFromState: summaryInput !== body,
+    });
+  } catch (err) {
+    const statusCode = err.message.includes('Run not found') ? 404 : 400;
+    res.status(statusCode).json({ error: err.message });
+  }
+});
+
+app.post('/api/study/runs/:id/notify', authMiddleware, async (req, res) => {
+  try {
+    const runId = sanitizeTaskId(req.params.id);
+    if (!runId) {
+      return res.status(400).json({ error: 'Invalid run ID' });
+    }
+
+    const run = studyRunManager.getRun(runId);
+    if (!run) {
+      return res.status(404).json({ error: 'Run not found' });
+    }
+    if (!run.notificationTarget) {
+      return res.status(400).json({ error: 'Notification target is not configured' });
+    }
+
+    const deliveryStatus = run.deliveryStatus || run.notificationStatus || null;
+    const retryReady = run.deliveryRetryReady === true;
+    const isReadyToSend = deliveryStatus === 'ready' || (!deliveryStatus && run.notificationStatus === 'ready');
+    if (deliveryStatus === 'sent') {
+      return res.status(409).json({ error: 'Notification was already sent', run });
+    }
+    if (deliveryStatus === 'sending') {
+      return res.status(409).json({ error: 'Notification delivery is already in progress', run });
+    }
+    if (!isReadyToSend && !(deliveryStatus === 'failed' && retryReady)) {
+      return res.status(409).json({ error: 'Notification is not ready for Discord delivery', run });
+    }
+
+    const body = req.body || {};
+    const explicitChannelId = typeof body.channelId === 'string' && body.channelId.trim()
+      ? body.channelId.trim()
+      : null;
+
+    const targetResolution = explicitChannelId
+      ? { channelId: explicitChannelId, source: 'request.body.channelId' }
+      : resolveDiscordNotificationTarget(run.notificationTarget, {
+        config: getOpenclawConfig() || {},
+        fallbackChannelId: COURT_CHANNEL_ID,
+      });
+    if (!targetResolution.channelId) {
+      const failedAt = new Date().toISOString();
+      const failureReason = `Unable to resolve Discord channel for notification target: ${run.notificationTarget}`;
+      const failedRun = studyRunManager.markNotificationDeliveryFailed(runId, {
+        ts: failedAt,
+        failureReason,
+      });
+      studyEventLogger.appendDeliveryFailed(runId, failedRun, run, {
+        ts: failedAt,
+        failureReason,
+        resolutionSource: targetResolution.source,
+      });
+      return res.status(400).json({ error: failureReason, run: failedRun });
+    }
+
+    const content = buildDiscordNotificationContent(run, readRunSummary(HOME, runId) || '');
+    if (!content) {
+      const failedAt = new Date().toISOString();
+      const failureReason = 'Notification content is empty';
+      const failedRun = studyRunManager.markNotificationDeliveryFailed(runId, {
+        ts: failedAt,
+        channelId: targetResolution.channelId,
+        failureReason,
+      });
+      studyEventLogger.appendDeliveryFailed(runId, failedRun, run, {
+        ts: failedAt,
+        channelId: targetResolution.channelId,
+        failureReason,
+        resolutionSource: targetResolution.source,
+      });
+      return res.status(400).json({ error: failureReason, run: failedRun });
+    }
+
+    const attemptAt = new Date().toISOString();
+    const sendingRun = studyRunManager.markNotificationDeliveryAttempt(runId, {
+      ts: attemptAt,
+      channelId: targetResolution.channelId,
+    });
+    studyEventLogger.appendDeliveryAttempt(runId, sendingRun, run, {
+      ts: attemptAt,
+      channelId: targetResolution.channelId,
+      resolutionSource: targetResolution.source,
+    });
+
+    try {
+      const message = await sendDiscordAsSilijian({ channelId: targetResolution.channelId, content });
+      const deliveredAt = new Date().toISOString();
+      const deliveredRun = studyRunManager.markNotificationDelivered(runId, {
+        ts: deliveredAt,
+        channelId: targetResolution.channelId,
+        messageId: message.id,
+        lastDeliveryAttemptAt: attemptAt,
+      });
+      studyEventLogger.appendDeliverySent(runId, deliveredRun, sendingRun, {
+        ts: deliveredAt,
+        channelId: targetResolution.channelId,
+        messageId: message.id,
+      });
+
+      return res.json({
+        run: deliveredRun,
+        sentAt: deliveredRun.sentAt,
+        messageId: deliveredRun.messageId,
+        deliveryStatus: deliveredRun.deliveryStatus,
+      });
+    } catch (err) {
+      const failedAt = new Date().toISOString();
+      const failedRun = studyRunManager.markNotificationDeliveryFailed(runId, {
+        ts: failedAt,
+        channelId: targetResolution.channelId,
+        failureReason: err.message,
+      });
+      studyEventLogger.appendDeliveryFailed(runId, failedRun, sendingRun, {
+        ts: failedAt,
+        channelId: targetResolution.channelId,
+        failureReason: err.message,
+      });
+      return res.status(502).json({ error: err.message, run: failedRun });
+    }
+  } catch (err) {
+    const statusCode = err.message.includes('Run not found') ? 404 : 400;
+    return res.status(statusCode).json({ error: err.message });
+  }
+});
+
+app.post('/api/study/runs/:id/recovery-check', authMiddleware, (req, res) => {
+  try {
+    const runId = sanitizeTaskId(req.params.id);
+    if (!runId) {
+      return res.status(400).json({ error: 'Invalid run ID' });
+    }
+
+    const run = studyRunManager.getRun(runId);
+    if (!run) {
+      return res.status(404).json({ error: 'Run not found' });
+    }
+
+    const requestedNow = typeof req.body?.now === 'string' ? Date.parse(req.body.now) : Number.NaN;
+    const nowMs = Number.isFinite(requestedNow) ? requestedNow : Date.now();
+    const health = evaluateRunHealth(run, nowMs);
+    const recoveryUpdate = buildRecoveryUpdate(run, health, new Date(nowMs).toISOString());
+
+    if (!recoveryUpdate) {
+      return res.json({ run, health, recovery: null });
+    }
+
+    const updatedRun = studyRunManager.updateRun(runId, recoveryUpdate.patch);
+    studyEventLogger.append(runId, {
+      ...recoveryUpdate.event,
+      runId,
+    });
+    res.json({
+      run: updatedRun,
+      health,
+      recovery: recoveryUpdate.recovery,
+    });
+  } catch (err) {
+    const statusCode = err.message.includes('Run not found') ? 404 : 400;
+    res.status(statusCode).json({ error: err.message });
+  }
+});
+
 app.get('/api/cron', authMiddleware, async (req, res) => {
   try {
     const { stdout } = await execAsync(`${CLI_CMD} cron list --json 2>/dev/null`, { encoding: 'utf-8', timeout: 5000 });
@@ -1632,21 +1976,36 @@ async function sendDiscordAsSilijian({ channelId, content }) {
   if (!channelId || !/^\d{17,20}$/.test(channelId)) throw new Error('Invalid channelId');
   const config = getOpenclawConfig() || {};
   const accounts = config.channels?.discord?.accounts || {};
-  let senderAccount = accounts['silijian'] || accounts['main'];
-  if (!senderAccount?.token) {
-    const firstKey = Object.keys(accounts)[0];
-    senderAccount = firstKey ? accounts[firstKey] : null;
+
+  const envTokenMap = {
+    silijian: process.env.DISCORD_BOT_TOKEN_SILIJIAN || null,
+    main: process.env.DISCORD_BOT_TOKEN_MAIN || null,
+    default: process.env.DISCORD_BOT_TOKEN || null,
+  };
+
+  let senderToken = envTokenMap.silijian || envTokenMap.main || envTokenMap.default || null;
+  let senderSource = senderToken ? 'env.DISCORD_BOT_TOKEN_SILIJIAN|MAIN|DISCORD_BOT_TOKEN' : null;
+
+  if (!senderToken) {
+    let senderAccount = accounts['silijian'] || accounts['main'];
+    if (!senderAccount?.token) {
+      const firstKey = Object.keys(accounts)[0];
+      senderAccount = firstKey ? accounts[firstKey] : null;
+    }
+    senderToken = senderAccount?.token || null;
+    senderSource = senderToken ? 'config.channels.discord.accounts' : null;
   }
-  if (!senderAccount?.token) throw new Error('No discord token available');
+
+  if (!senderToken) throw new Error('No discord token available');
 
   const r = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
     method: 'POST',
-    headers: { 'Authorization': `Bot ${senderAccount.token}`, 'Content-Type': 'application/json' },
+    headers: { 'Authorization': `Bot ${senderToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ content })
   });
   if (!r.ok) {
     const t = await r.text();
-    throw new Error(`Discord send failed ${r.status}: ${t}`);
+    throw new Error(`Discord send failed ${r.status}: ${t}${senderSource ? ` [source=${senderSource}]` : ''}`);
   }
   return r.json();
 }
@@ -1753,6 +2112,329 @@ for (const [k,v] of Object.entries(process.env)) {
 const _roleRouterSeen = new Set();
 
 
+
+function splitDiscordMessageContent(content, maxLen = 3800) {
+  const text = String(content || '');
+  if (!text) return [''];
+  if (text.length <= maxLen) return [text];
+  const chunks = [];
+  let remaining = text;
+  while (remaining.length > maxLen) {
+    let cut = remaining.lastIndexOf("\n\n", maxLen);
+    if (cut < Math.floor(maxLen * 0.5)) cut = remaining.lastIndexOf("\n", maxLen);
+    if (cut < Math.floor(maxLen * 0.5)) cut = remaining.lastIndexOf('。', maxLen);
+    if (cut < Math.floor(maxLen * 0.5)) cut = maxLen;
+    chunks.push(remaining.slice(0, cut).trim());
+    remaining = remaining.slice(cut).trimStart();
+  }
+  if (remaining) chunks.push(remaining);
+  return chunks.filter(Boolean);
+}
+
+function classifyComplexTask(message) {
+  const text = String(message || '');
+  return /三省|不要直接跳过|先由内阁|都察院|治理专区使用说明|复杂任务/.test(text);
+}
+
+function buildWorkflowTaskId(prefix = 'sansheng') {
+  return `${prefix}-${Date.now()}`;
+}
+
+async function appendOpenMossEvent(taskId, input = {}) {
+  return openMossTaskService.activityLogStorage.appendTaskEvent(taskId, input);
+}
+
+function extractAgentTextFromRaw(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return '';
+  const starts = [];
+  for (let i = 0; i < text.length; i++) if (text[i] === '{') starts.push(i);
+  for (const idx of starts.slice(-12)) {
+    try {
+      const obj = JSON.parse(text.slice(idx));
+      const payloadText = obj?.result?.text || obj?.payloads?.[0]?.text || (Array.isArray(obj?.payloads) ? obj.payloads.find(x => x?.text)?.text : '');
+      if (payloadText) return String(payloadText).trim();
+    } catch {}
+  }
+  return text;
+}
+
+async function runAgentJson({ agentId, message, timeoutMs = 45000 }) {
+  const safeAgentId = sanitizeAgentId(agentId);
+  if (!safeAgentId) throw new Error(`invalid agent id: ${agentId}`);
+  const safeMsg = String(message || '').replace(/'/g, `'\\''`);
+  const cmd = `${CLI_CMD} agent --agent ${safeAgentId} --json -m '${safeMsg}'`;
+  const opts = { encoding: 'utf-8', maxBuffer: 1024 * 1024 * 8 };
+  if (timeoutMs > 0) opts.timeout = timeoutMs;
+  const { stdout, stderr } = await execAsync(`${cmd} 2>&1`, opts);
+  const raw = String(stdout || stderr || '');
+  const text = extractAgentTextFromRaw(raw);
+  return { raw, text };
+}
+
+function parseNeigePlan(text) {
+  const source = String(text || '').trim();
+  const recMatch = source.match(/2\.\s*推荐承办部门[\s\S]*?(?=\n\s*3\.|$)/);
+  const recSection = recMatch ? recMatch[0] : source;
+  let department = null;
+  if (/礼部/.test(recSection)) department = 'libu';
+  else if (/兵部/.test(recSection)) department = 'bingbu';
+  else if (/工部/.test(recSection)) department = 'gongbu';
+  else if (/户部/.test(recSection)) department = 'hubu';
+  else if (/刑部/.test(recSection)) department = 'xingbu';
+  else if (/吏部/.test(recSection)) department = 'libu2';
+  const reviewRequired = /是否需要都察院审查（是\/否）[\s\S]*?是/.test(source) || /都察院审查（是\/否）[\s\S]*?是/.test(source);
+  return {
+    summary: source.slice(0, 600),
+    department,
+    deliverableType: 'plan',
+    requiredSections: ['治理专区定位与用途','适用对象','进入方式','功能概览','使用流程','权限与角色分工','注意事项','常见问题','反馈与支持渠道'],
+    risks: ['文种错位','边界模糊','事实偏差','审查缺位'],
+    reviewRequired,
+    raw: source,
+  };
+}
+
+function validatePlanningSchema(plan) {
+  if (!plan || plan.deliverableType !== 'plan') return { ok: false, reason: 'planning_wrong_type' };
+  if (!plan.department) return { ok: false, reason: 'planning_unparsed_department' };
+  if (!Array.isArray(plan.requiredSections) || plan.requiredSections.length < 5) return { ok: false, reason: 'planning_missing_sections' };
+  return { ok: true };
+}
+
+function normalizeBodyDraft(text, department = 'libu') {
+  const body = String(text || '').trim();
+  const sections = [];
+  for (const title of ['治理专区定位与用途','适用对象','进入方式','功能概览','使用流程','权限与角色分工','注意事项','常见问题','反馈与支持渠道']) {
+    if (body.includes(title)) sections.push(title);
+  }
+  return { title: '治理专区使用说明', department, deliverableType: 'body_draft', body, sections, warnings: [] };
+}
+
+function validateBodyDraftSchema(draft, execLabel = '礼部') {
+  const body = String(draft?.body || '');
+  if (!draft || draft.deliverableType !== 'body_draft') return { ok: false, reason: 'execution_wrong_schema' };
+  if (!body.startsWith(`【${execLabel}】`)) return { ok: false, reason: 'execution_wrong_schema' };
+  if (/^【都察院】/m.test(body) || /审查意见|裁定：|结论：需修改|退回/.test(body)) return { ok: false, reason: 'execution_wrong_schema' };
+  const required = ['治理专区定位与用途','适用对象','进入方式','功能概览','使用流程','权限与角色分工','注意事项','常见问题','反馈与支持渠道'];
+  const missing = required.filter(x => !body.includes(x));
+  if (missing.length) return { ok: false, reason: 'execution_wrong_schema', missing };
+  return { ok: true };
+}
+
+function shouldApproveReview(text) {
+  const t = String(text || '');
+  return /结论：\s*通过/.test(t) || /裁定：\s*通过/.test(t);
+}
+
+function normalizeReviewOpinion(text, department = 'libu') {
+  const body = String(text || '').trim();
+  const verdict = /结论：\s*通过/.test(body) || /裁定：\s*通过/.test(body) ? 'approve' : 'reject';
+  return { deliverableType: 'review_opinion', department, verdict, issues: body, suggestions: body, action: verdict === 'approve' ? 'approve' : 'reject', body };
+}
+
+function buildSanshengFailureMessage(reason, execLabel = '') {
+  switch (reason) {
+    case 'planning_call_failed': return '【司礼监】内阁拟票阶段调用失败，现转为待处理。';
+    case 'planning_empty': return '【司礼监】内阁拟票返回为空，现转为待处理。';
+    case 'planning_unparsed_department': return '【司礼监】内阁已拟票，但未能识别承办部门，现转为待处理。';
+    case 'execution_failed': return `【司礼监】已转【${execLabel || '执行部门'}】办理，但执行阶段失败/超时，现转为待处理。`;
+    case 'execution_wrong_schema': return `【司礼监】${execLabel || '执行部门'}返回的不是正文交付，而是错误类型产物，现转为待处理。`;
+    case 'review_failed': return '【司礼监】都察院审查阶段失败，现转为待处理。';
+    default: return '【司礼监】三省流程执行失败，现转为待处理。';
+  }
+}
+
+
+async function runPlanningStage({ message, taskId, channelId }) {
+  const planningTimeouts = [45000, 30000];
+  let lastError = null;
+  for (let i = 0; i < planningTimeouts.length; i++) {
+    try {
+      const neige = await runAgentJson({
+        agentId: 'neige',
+        message: `你是内阁。请只做前置规划，不写正文，不写审查意见。\n\n原始任务：${message}\n\n请严格输出以下结构：\n1. 任务拆解\n2. 推荐承办部门\n3. 风险提示\n4. 是否需要都察院审查（是/否）`,
+        timeoutMs: planningTimeouts[i],
+      });
+      const plan = parseNeigePlan(neige.text || '');
+      console.log(`[sansheng] planning attempt=${i + 1} raw len=${String(neige.raw || '').length} cleaned len=${String(neige.text || '').length} dept=${plan.department || 'none'}`);
+      const valid = validatePlanningSchema(plan);
+      if (!valid.ok) {
+        if (i < planningTimeouts.length - 1) {
+          await new Promise(r => setTimeout(r, 3000));
+          continue;
+        }
+        return { ok: false, reason: valid.reason, neige, plan };
+      }
+      return { ok: true, neige, plan, attempts: i + 1 };
+    } catch (e) {
+      lastError = e;
+      console.log(`[sansheng] planning attempt=${i + 1} failed: ${e?.message || e}`);
+      if (i < planningTimeouts.length - 1) await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+  return { ok: false, reason: 'planning_call_failed', error: lastError };
+}
+
+async function runExecutionStage({ message, taskId, channelId, plan, neige }) {
+  const execLabel = AGENT_DEPT_MAP[plan.department] || plan.department;
+  const execLogPath = `/tmp/danghuangshang-sansheng-execution-${taskId}.log`;
+  const taskPackage = {
+    deliverableType: 'body_draft',
+    title: '治理专区使用说明',
+    department: plan.department,
+    summary: plan.summary,
+    requiredSections: plan.requiredSections,
+    risks: plan.risks,
+    outputRules: {
+      prefix: `【${execLabel}】《治理专区使用说明》`,
+      forbid: ['【都察院】', '审查意见', '裁定：', '结论：需修改', '退回'],
+    },
+  };
+  const execPrompt = `你现在是${execLabel}。当前只负责第二阶段正文起草，不负责审查。\n\n交付物类型：body_draft\n任务标题：治理专区使用说明\n原始任务：${message}\n\n任务包：\n${JSON.stringify(taskPackage, null, 2)}\n\n请直接输出最终正文，必须以“【${execLabel}】《治理专区使用说明》”开头。不要输出 JSON，不要输出审查意见，不要代替都察院下结论。`;
+  try {
+    const execution = await runAgentJson({ agentId: plan.department, message: execPrompt, timeoutMs: 0 });
+    const draft = normalizeBodyDraft(execution.text, plan.department);
+    const valid = validateBodyDraftSchema(draft, execLabel);
+    if (!valid.ok) {
+      const failMsg = buildSanshengFailureMessage('execution_wrong_schema', execLabel);
+      await sendDiscordAsSilijian({ channelId, content: failMsg });
+      openMossTaskService.blockTask(taskId, {
+        actor: plan.department,
+        note: `执行阶段产物类型错误：${valid.reason}`,
+        metadata: { stage: 'execution', department: plan.department, dispatchAccepted: true, execLogPath, validation: valid },
+      });
+      await appendOpenMossEvent(taskId, {
+        type: 'block', actor: plan.department, note: `执行阶段产物类型错误：${valid.reason}`,
+        fromStatus: 'in_progress', toStatus: 'blocked',
+        metadata: { stage: 'execution', department: plan.department, dispatchAccepted: true, execLogPath, validation: valid },
+      });
+      return { ok: false, reason: 'execution_wrong_schema', execution, draft, validation: valid, execLabel, execLogPath };
+    }
+    return { ok: true, execution: { ...execution, draft }, execLabel, execLogPath };
+  } catch (e) {
+    const failMsg = buildSanshengFailureMessage('execution_failed', execLabel);
+    await sendDiscordAsSilijian({ channelId, content: failMsg });
+    openMossTaskService.blockTask(taskId, {
+      actor: plan.department,
+      note: `执行阶段失败：${e?.message || e}`,
+      metadata: { stage: 'execution', department: plan.department, dispatchAccepted: true, execLogPath },
+    });
+    await appendOpenMossEvent(taskId, {
+      type: 'block', actor: plan.department, note: `执行阶段失败：${e?.message || e}`,
+      fromStatus: 'in_progress', toStatus: 'blocked',
+      metadata: { stage: 'execution', department: plan.department, dispatchAccepted: true, execLogPath },
+    });
+    return { ok: false, reason: 'execution_failed', error: e, execLabel, execLogPath };
+  }
+}
+
+async function runReviewStage({ message, taskId, channelId, plan, neige, execution }) {
+  const reviewLogPath = `/tmp/danghuangshang-sansheng-review-${taskId}.log`;
+  const bodyDraft = execution?.draft || normalizeBodyDraft(execution?.text, plan.department);
+  const reviewPrompt = `你是都察院。当前只负责第三阶段审查，审查对象只能是第二阶段正文。\n\n交付物类型：review_opinion\n原始任务：${message}\n\n第二阶段正文（唯一待审对象）：\n${bodyDraft.body}\n\n请严格输出：\n1. 结论：通过 或 需修改\n2. 问题：...\n3. 建议：...\n4. 裁定：通过 或 退回`;
+  try {
+    const review = await runAgentJson({ agentId: 'duchayuan', message: reviewPrompt, timeoutMs: 45000 });
+    const opinion = normalizeReviewOpinion(review.text || '', plan.department);
+    return { ok: true, review: { ...review, opinion }, approved: shouldApproveReview(review.text || ''), reviewLogPath };
+  } catch (e) {
+    const failMsg = buildSanshengFailureMessage('review_failed');
+    await sendDiscordAsSilijian({ channelId, content: failMsg });
+    openMossTaskService.blockTask(taskId, {
+      actor: 'duchayuan',
+      note: `审查阶段失败：${e?.message || e}`,
+      metadata: { stage: 'review', department: plan.department, reviewLogPath },
+    });
+    await appendOpenMossEvent(taskId, {
+      type: 'block', actor: 'duchayuan', note: `审查阶段失败：${e?.message || e}`,
+      fromStatus: 'review', toStatus: 'blocked',
+      metadata: { stage: 'review', department: plan.department, reviewLogPath },
+    });
+    return { ok: false, reason: 'review_failed', error: e, reviewLogPath };
+  }
+}
+
+async function runSanshengWorkflow({ message, channelId }) {
+  const taskId = buildWorkflowTaskId('sansheng');
+  const title = `三省流程：${String(message || '').replace(/\s+/g, ' ').trim().slice(0, 48) || '复杂任务'}`;
+  openMossTaskService.createTask({
+    id: taskId,
+    title,
+    description: String(message || '').trim().slice(0, 1000),
+    actor: 'silijian',
+    owner: 'silijian',
+    note: '司礼监接旨，进入三省流程',
+  });
+  await sendDiscordAsSilijian({ channelId, content: `【司礼监】已接旨。此任务按三省流程办理，先请【内阁】拟票。\n任务：${shortTextForAck(message)}` });
+  openMossTaskService.claimTask(taskId, { actor: 'silijian', note: '司礼监认领，准备请内阁前置规划' });
+  await appendOpenMossEvent(taskId, { type: 'claim', actor: 'silijian', note: '司礼监认领，准备请内阁前置规划', fromStatus: 'pending', toStatus: 'in_progress', metadata: {} });
+  await appendOpenMossEvent(taskId, { type: 'claim', actor: 'silijian', note: '进入内阁前置规划阶段', fromStatus: 'in_progress', toStatus: 'in_progress', metadata: { stage: 'planning' } });
+
+  const planning = await runPlanningStage({ message, taskId, channelId });
+  if (!planning.ok) {
+    const failMsg = buildSanshengFailureMessage(planning.reason || 'planning_call_failed');
+    await sendDiscordAsSilijian({ channelId, content: failMsg });
+    openMossTaskService.blockTask(taskId, {
+      actor: 'neige',
+      note: `规划阶段失败：${planning.reason || planning.error?.message || 'unknown'}`,
+      metadata: { stage: 'planning' },
+    });
+    await appendOpenMossEvent(taskId, {
+      type: 'block', actor: 'neige', note: `规划阶段失败：${planning.reason || planning.error?.message || 'unknown'}`,
+      fromStatus: 'in_progress', toStatus: 'blocked', metadata: { stage: 'planning' },
+    });
+    return { ok: false, taskId, stage: 'planning', reason: planning.reason };
+  }
+
+  const { neige, plan, attempts } = planning;
+  await appendOpenMossEvent(taskId, {
+    type: 'claim', actor: 'neige', note: neige.text || '【内阁】已完成前置规划',
+    fromStatus: 'in_progress', toStatus: 'in_progress',
+    metadata: { stage: 'planning-complete', department: plan.department, reviewRequired: plan.reviewRequired, attempts },
+  });
+  await sendDiscordAsSilijian({ channelId, content: neige.text || '【内阁】已完成拟票。' });
+  await sendDiscordAsSilijian({ channelId, content: `【司礼监】内阁拟票已收，现转【${AGENT_DEPT_MAP[plan.department] || plan.department}】办理。` });
+  await appendOpenMossEvent(taskId, {
+    type: 'submit', actor: 'silijian', note: `转 ${AGENT_DEPT_MAP[plan.department] || plan.department} 执行`,
+    fromStatus: 'in_progress', toStatus: 'in_progress', metadata: { stage: 'dispatching', department: plan.department, dispatchAccepted: true },
+  });
+
+  const executionStage = await runExecutionStage({ message, taskId, channelId, plan, neige });
+  if (!executionStage.ok) return { ok: false, taskId, stage: 'execution', reason: executionStage.reason };
+  const { execution, execLabel } = executionStage;
+  await sendDiscordAsSilijian({ channelId, content: execution.text || `【${execLabel}】已完成正文。` });
+  openMossTaskService.submitForReview(taskId, { actor: plan.department, note: `${execLabel} 已提交结果，待都察院审查`, metadata: { department: plan.department } });
+  await appendOpenMossEvent(taskId, {
+    type: 'submit', actor: plan.department, note: `${execLabel} 已提交结果，待都察院审查`,
+    fromStatus: 'in_progress', toStatus: 'review', metadata: { department: plan.department },
+  });
+  await appendOpenMossEvent(taskId, {
+    type: 'submit', actor: plan.department, note: '执行结果已提交审查',
+    fromStatus: 'review', toStatus: 'review', metadata: { stage: 'execution-complete', department: plan.department, dispatchAccepted: true },
+  });
+
+  const reviewStage = await runReviewStage({ message, taskId, channelId, plan, neige, execution });
+  if (!reviewStage.ok) return { ok: false, taskId, stage: 'review', reason: reviewStage.reason };
+  const { review, approved } = reviewStage;
+  await sendDiscordAsSilijian({ channelId, content: review.text || '【都察院】已完成审查。' });
+  if (approved) {
+    openMossTaskService.approveReview(taskId, { actor: 'duchayuan', note: review.text || '都察院审查通过', metadata: { workflow: 'sansheng', department: plan.department, verdict: 'approve' } });
+    await appendOpenMossEvent(taskId, {
+      type: 'review', actor: 'duchayuan', note: review.text || '都察院审查通过',
+      fromStatus: 'review', toStatus: 'done', metadata: { workflow: 'sansheng', department: plan.department, verdict: 'approve', action: 'approve' },
+    });
+    await sendDiscordAsSilijian({ channelId, content: `【司礼监】三省流程已完结。承办：${execLabel}；审查：通过。` });
+    return { ok: true, taskId, plan, execution, review };
+  }
+  openMossTaskService.rejectReview(taskId, { actor: 'duchayuan', note: review.text || '都察院审查退回', metadata: { workflow: 'sansheng', department: plan.department, verdict: 'reject' } });
+  await appendOpenMossEvent(taskId, {
+    type: 'review', actor: 'duchayuan', note: review.text || '都察院审查退回',
+    fromStatus: 'review', toStatus: 'rework', metadata: { workflow: 'sansheng', department: plan.department, verdict: 'reject', action: 'reject' },
+  });
+  await sendDiscordAsSilijian({ channelId, content: `【司礼监】都察院审查未通过，现退回待修改。承办：${execLabel}。` });
+  return { ok: true, taskId, plan, execution, review, approved: false };
+}
+
 function shortTextForAck(text, maxLen = 160) {
   const t = String(text || '').replace(/\s+/g, ' ').trim();
   if (t.length <= maxLen) return t;
@@ -1810,8 +2492,13 @@ app.post('/api/role-command', authMiddleware, async (req, res) => {
       _roleRouterSeen.delete(first);
     }
 
+    if (safeAgentId === 'silijian' && classifyComplexTask(text)) {
+      const result = await runSanshengWorkflow({ message: text, channelId: channel });
+      return res.json({ ok: true, workflow: 'sansheng', result });
+    }
+
     await roleRouterDispatch({ targetBotId: safeAgentId, message: text, channelId: channel });
-    return res.json({ ok: true });
+    return res.json({ ok: true, workflow: 'direct' });
   } catch (e) {
     console.error('[role-router] /api/role-command failed:', e);
     return res.status(500).json({ error: e?.message || String(e) });
