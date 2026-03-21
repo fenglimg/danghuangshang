@@ -44,7 +44,7 @@
 先确认基础状态：
 
 ```bash
-cd /root/danghuangshang
+cd /root/.openclaw/workspace/_repos/danghuangshang
 git status -sb
 openclaw --version
 systemctl --user status openclaw-gateway --no-pager
@@ -53,17 +53,17 @@ systemctl --user status openclaw-gateway --no-pager
 如果你使用本仓库 GUI：
 
 ```bash
-cd /root/danghuangshang/gui
+cd /root/.openclaw/workspace/_repos/danghuangshang/gui
 npm install
 npm run build
-cd /root/danghuangshang/gui/server
+cd /root/.openclaw/workspace/_repos/danghuangshang/gui/server
 npm install
 ```
 
 如果要先做 OpenMOSS 自动化基线验证：
 
 ```bash
-cd /root/danghuangshang
+cd /root/.openclaw/workspace/_repos/danghuangshang
 npm --prefix gui/server run test:openmoss
 ```
 
@@ -111,7 +111,7 @@ journalctl --user -u openclaw-gateway --since "5 min ago" --no-pager
 操作：
 
 ```bash
-cd /root/danghuangshang
+cd /root/.openclaw/workspace/_repos/danghuangshang
 bash ./doctor.sh
 ```
 
@@ -243,9 +243,9 @@ bash ./doctor.sh
 操作：
 
 ```bash
-cd /root/danghuangshang/gui
+cd /root/.openclaw/workspace/_repos/danghuangshang/gui
 npm run build
-cd /root/danghuangshang/gui/server
+cd /root/.openclaw/workspace/_repos/danghuangshang/gui/server
 BOLUO_AUTH_TOKEN=test-pass node index.js
 ```
 

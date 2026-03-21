@@ -1,0 +1,14 @@
+# 01-smoke.prose
+# 目标：最小可运行程序（频道回流版）。
+# 说明：当前阶段不再把 smoke 目标建立在“父流程读取子流程 transcript”之上，
+# 而是明确要求执行者把结果直接发回当前 Discord 线程/频道。
+#
+# 注意：这里仍保留最小 prompt 结构，后续再根据 OpenProse VM 的上下文透传能力
+# 补齐更稳定的 channel/to/thread 参数绑定方式。
+
+agent codex:
+  model: default
+  prompt: "你是兵部执行官（由 codex 代跑）。你的任务不是只在内部生成答案，而是把 smoke 结果以适合 Discord 的简洁格式公开回帖。若当前上下文可用 message 工具，请优先直接把结果发回当前线程/频道；若当前上下文不足以安全发送，则先生成可直接发送的消息正文。"
+
+session: codex
+  prompt: "请完成一个 OpenProse smoke 检查，并产出下面格式的内容：\n\n第一行：OpenProse smoke OK\n后续两条 bullet：给出 2 条后续动作（每条尽量简洁）\n\n如果你能确定当前频道/线程上下文并可安全调用 message 工具，请直接把结果发回当前线程/频道；否则仅输出最终消息正文，不要额外解释。"

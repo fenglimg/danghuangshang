@@ -26,7 +26,7 @@
 ## 1) 进入正确的 worktree（避免在“错目录”操作）
 
 ```bash
-cd /root/danghuangshang
+cd /root/.openclaw/workspace/_repos/danghuangshang
 pwd
 
 git rev-parse --show-toplevel
@@ -164,7 +164,7 @@ git rev-list --left-right --count origin/<A>...origin/<B>
 把 `<A>` `<B>` 替换成你的分支名：
 
 ```bash
-cd /root/danghuangshang
+cd /root/.openclaw/workspace/_repos/danghuangshang
 set -e
 
 git fetch --prune origin

@@ -74,7 +74,7 @@ cp -a /root/clawd /tmp/openmoss-live-upgrade-20260317T162418Z/home/clawd
 执行：
 
 ```bash
-cd /root/danghuangshang/gui/server
+cd /root/.openclaw/workspace/_repos/danghuangshang/gui/server
 env BOLUO_AUTH_TOKEN=openmoss-rehearsal-token \
   BOLUO_GUI_PORT=18796 \
   BOLUO_BIND_HOST=127.0.0.1 \
