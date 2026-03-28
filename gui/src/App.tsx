@@ -113,17 +113,17 @@ function App() {
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-56 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:inset-auto ${
+      <aside className={`fixed inset-y-0 left-0 z-50 w-[15rem] md:w-56 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:inset-auto flex flex-col ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`} style={{ backgroundColor: 'var(--bg-sidebar)', borderRight: '1px solid var(--border-accent)' }}>
         
         {/* Logo */}
-        <div className="p-4 border-b" style={{ borderColor: 'var(--border-accent)' }}>
-          <div className="flex items-center gap-2.5">
-            <PineappleLogo size={32} />
-            <div>
-              <div className="text-base font-bold text-accent-gradient tracking-wide">{BRAND_NAME}</div>
-              <div className="text-[9px] tracking-widest uppercase" style={{ color: 'var(--text-tertiary)' }}>
+        <div className="p-3 md:p-4 border-b" style={{ borderColor: 'var(--border-accent)' }}>
+          <div className="flex items-center gap-2 md:gap-2.5">
+            <PineappleLogo size={28} />
+            <div className="min-w-0">
+              <div className="text-sm md:text-base font-bold text-accent-gradient tracking-wide truncate">{BRAND_NAME}</div>
+              <div className="hidden md:block text-[9px] tracking-widest uppercase" style={{ color: 'var(--text-tertiary)' }}>
                 {data?.uptime ? `运行 ${data.uptime}` : BRAND_SUBTITLE}
               </div>
             </div>
@@ -131,12 +131,12 @@ function App() {
         </div>
 
         {/* Nav Items */}
-        <nav className="flex-1 py-3 overflow-y-auto">
+        <nav className="flex-1 overflow-y-auto overscroll-contain py-2 md:py-3">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => { setActiveTab(tab.key); setSidebarOpen(false); if (tab.key !== 'sessions') setSessionFilter(undefined) }}
-              className={`w-full flex items-center gap-3 px-5 py-2.5 text-sm transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 md:gap-3 px-4 md:px-5 py-2 md:py-2.5 text-[13px] md:text-sm transition-all cursor-pointer ${
                 activeTab === tab.key
                   ? 'nav-active'
                   : ''
@@ -159,29 +159,29 @@ function App() {
                 }
               }}
             >
-              <span className="text-base">{tab.icon}</span>
-              <span>{tab.label}</span>
+              <span className="text-[15px] md:text-base">{tab.icon}</span>
+              <span className="truncate">{tab.label}</span>
             </button>
           ))}
         </nav>
 
         {/* Bottom Actions */}
-        <div className="p-4 border-t" style={{ borderColor: 'var(--border-accent)' }}>
-          <div className="flex items-center gap-2">
-            <button onClick={refresh} className="flex-1 py-2 text-xs rounded-lg cursor-pointer transition-colors" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-accent)' }} title="刷新">↻ 刷新</button>
-            <button onClick={toggleTheme} className="flex-1 py-2 text-xs rounded-lg cursor-pointer transition-colors" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-accent)' }}>
+        <div className="p-3 md:p-4 border-t shrink-0" style={{ borderColor: 'var(--border-accent)' }}>
+          <div className="grid grid-cols-3 md:flex md:items-center gap-2">
+            <button onClick={refresh} className="py-1.5 md:py-2 text-[11px] md:text-xs rounded-lg cursor-pointer transition-colors" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-accent)' }} title="刷新">↻ 刷新</button>
+            <button onClick={toggleTheme} className="py-1.5 md:py-2 text-[11px] md:text-xs rounded-lg cursor-pointer transition-colors" style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-accent)' }}>
               {theme === 'dark' ? '☀️' : '🌙'}
             </button>
+            <button
+              onClick={() => { localStorage.removeItem('boluo_auth_token'); setIsLoggedIn(false) }}
+              className="py-1.5 md:py-2 text-[11px] md:text-xs rounded-lg cursor-pointer transition-colors hover:text-red-500"
+              style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-accent)' }}
+            >
+              退出
+            </button>
           </div>
-          <button
-            onClick={() => { localStorage.removeItem('boluo_auth_token'); setIsLoggedIn(false) }}
-            className="w-full mt-2 py-2 text-xs rounded-lg cursor-pointer transition-colors hover:text-red-500"
-            style={{ color: 'var(--text-secondary)', border: '1px solid var(--border-accent)' }}
-          >
-            退出登录
-          </button>
           {lastUpdated && (
-            <div className="text-[10px] mt-2 text-center" style={{ color: 'var(--text-tertiary)' }}>
+            <div className="hidden md:block text-[10px] mt-2 text-center" style={{ color: 'var(--text-tertiary)' }}>
               更新: {lastUpdated.toLocaleTimeString("zh-CN")}
             </div>
           )}

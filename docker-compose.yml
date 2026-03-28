@@ -5,7 +5,6 @@ services:
     container_name: ai-court
     restart: unless-stopped
     ports:
-      - "127.0.0.1:18789:18789"   # Gateway Dashboard
       - "127.0.0.1:18795:18795"   # 菠萝 GUI（可选）
     volumes:
       # 配置持久化（init-court 生成的配置不会因容器重建丢失）

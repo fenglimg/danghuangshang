@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import type { SystemStatus } from "../types"
 
 const DEFAULT_REFRESH_INTERVAL = 30000
+const AUTH_EXPIRED_FLAG = 'boluo_auth_expired_handled'
 
 function getAuthToken(): string {
   return localStorage.getItem('boluo_auth_token') || ''
@@ -33,15 +34,33 @@ export function useStatus() {
     const controller = new AbortController()
     abortRef.current = controller
     try {
+      const token = getAuthToken()
       const res = await fetch("/api/status", {
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
-        },
+        headers: token ? {
+          'Authorization': `Bearer ${token}`
+        } : {},
         signal: controller.signal
       })
+      if (res.status === 401) {
+        if (!controller.signal.aborted) {
+          setData(null)
+          setLastUpdated(null)
+          setError('登录已失效，请重新登录')
+
+          const alreadyHandled = sessionStorage.getItem(AUTH_EXPIRED_FLAG) === '1'
+          if (token && !alreadyHandled) {
+            sessionStorage.setItem(AUTH_EXPIRED_FLAG, '1')
+            localStorage.removeItem('boluo_auth_token')
+            window.location.reload()
+          }
+        }
+        return
+      }
+
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
       const json = await res.json()
       if (!controller.signal.aborted) {
+        sessionStorage.removeItem(AUTH_EXPIRED_FLAG)
         setData(json)
         setError(null)
         setLastUpdated(new Date())
